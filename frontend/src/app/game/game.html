@@ -5,9 +5,17 @@
     <p class="status error">Something went wrong. Please try again.</p>
     <button type="button" class="retry" (click)="startGame()">Retry</button>
   } @else if (state(); as current) {
-    <p class="health">Health: {{ current.health }}</p>
+    <header class="game-header">
+      <span class="health" [class.dead]="current.status === 'DEAD'">❤️ {{ current.health }} HP</span>
+      @if (current.status === 'PLAYING') {
+        <button type="button" class="stop" routerLink="/">Stop</button>
+      }
+    </header>
 
     <article class="section">
+      @if (current.consequenceText) {
+        <p class="consequence">{{ current.consequenceText }}</p>
+      }
       <p class="text">{{ current.section.text }}</p>
     </article>
 
@@ -22,7 +30,7 @@
     } @else {
       <p class="ending" [class.won]="current.status === 'WON'" [class.dead]="current.status === 'DEAD'">
         @if (current.status === 'WON') {
-          You won! Your quest is complete.
+          You made it out alive! Your quest is complete.
         } @else {
           You died. Your quest has ended.
         }

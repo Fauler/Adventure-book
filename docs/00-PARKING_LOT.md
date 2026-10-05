@@ -50,9 +50,9 @@ Open questions to resolve later:
 
 ---
 
-## 3 - How should `consequence.text` be surfaced to the player?
+## 3 - How should `consequence.text` be surfaced to the player? ✅ Resolved (M3)
 
-Raised: 05-10-2026
+Raised: 05-10-2026 — Resolved: 05-10-2026 (M3 implementation)
 
 Idea: `consequence.text` (the flavor text, e.g. "You cut yourself on a rusty nail") is
 naturally available on the book detail (`GET /api/books/{id}` → each option's nested
@@ -66,20 +66,21 @@ after a move, it would need to already hold the *previous* section's data (from 
 earlier `GET /api/books/{id}`) and manually correlate it with the `optionIndex` it just
 sent — the `/play` response alone doesn't explain "what happened."
 
-Open questions to resolve later (design decision, not yet made):
-- **Option A** — keep `/play` as-is: frontend always holds the full book detail in
-  memory and correlates `optionIndex → consequence` itself. Simplest backend, more
-  responsibility pushed to the frontend (tension with "frontend is dumb" principle in
-  `03-technical-architecture.md`).
-- **Option B** — extend the `/play` response to explicitly include the consequence that
-  just applied (e.g. a `triggeredConsequence` field, null if the chosen option had
-  none), so the response is self-sufficient and the frontend never needs to
-  keep/correlate prior state.
-- If Option B: how do we distinguish "no consequence happened" (chosen option had none)
-  from "a consequence happened but has empty text" — `null` vs. an object with an empty
-  string?
-- This directly affects the `/play` API contract in `03-technical-architecture.md` —
-  any change needs explicit discussion/approval before editing the contract or code.
+**Decision**: Option B. `PlayResponse` now includes a `consequenceText` field (`String`,
+nullable) — `null` when the chosen option carried no `Consequence`, otherwise the
+consequence's flavor text. This keeps the frontend "dumb" (no need to hold/correlate
+prior book-detail state) and satisfies US-06's "I'm shown the consequence text" AC.
+`docs/03-technical-architecture.md`'s API contract table has been updated to match.
+There is no separate "consequence happened but has empty text" case in practice — a
+`Consequence` is only ever attached to an `Option` with non-blank flavor text in the
+sample data; if that ever changes, an empty string (not `null`) would still correctly
+mean "a consequence fired, with no text," so the `null`-vs-"happened" distinction holds.
+
+~~Open questions to resolve later (design decision, not yet made):~~
+- ~~**Option A** — keep `/play` as-is...~~
+- ~~**Option B** — extend the `/play` response...~~
+- ~~If Option B: how do we distinguish...~~
+- ~~This directly affects the `/play` API contract...~~
 
 ---
 

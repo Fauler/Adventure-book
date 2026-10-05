@@ -20,9 +20,32 @@
   cursor: pointer;
 }
 
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
 .health {
   font-weight: 600;
-  margin-bottom: 1rem;
+
+  &.dead {
+    color: #c0392b;
+  }
+}
+
+.stop {
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.3rem;
+  border: 1px solid #c0392b;
+  background: transparent;
+  color: #c0392b;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(192, 57, 43, 0.08);
+  }
 }
 
 .section {
@@ -30,6 +53,12 @@
   border-radius: 0.5rem;
   padding: 1.25rem;
   margin-bottom: 1.25rem;
+
+  .consequence {
+    margin: 0 0 0.75rem;
+    font-style: italic;
+    color: #8a6d00;
+  }
 
   .text {
     margin: 0;

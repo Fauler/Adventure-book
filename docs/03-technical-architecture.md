@@ -152,7 +152,8 @@ Domain behavior lives on these classes, not in services, e.g.:
   `.errors.txt` content 1:1).
 - `Section.isEnding()` → `type == END`.
 - `Consequence.applyTo(int health)` → returns the clamped-at-0 new health.
-- A small `MoveResult` value object (`section`, `health`, `status`) is returned by the
+- A small `MoveResult` value object (`section`, `health`, `status`, `consequenceText`)
+  is returned by the
   domain move logic and reused as-is for the API response shape below.
 
 ## Book ingestion & validation pipeline
@@ -203,7 +204,7 @@ flowchart LR
 |---|---|---|---|
 | `GET` | `/api/books` | query params: `search`, `difficulty`, `tags` (all optional) | Summarized list of **valid** books (id, title, author, difficulty, tags, description) |
 | `GET` | `/api/books/{id}` | — | Full detail of a valid book (all sections) — used to render the home → "book detail"/"begin quest" step |
-| `POST` | `/api/books/{id}/play` | `{ currentSectionId, optionIndex, health }` (omit `currentSectionId`/`optionIndex` to start a fresh game at `BEGIN`) | `{ section, health, status: PLAYING \| WON \| DEAD }` — the complete next view model |
+| `POST` | `/api/books/{id}/play` | `{ currentSectionId, optionIndex, health }` (omit `currentSectionId`/`optionIndex` to start a fresh game at `BEGIN`) | `{ section, health, status: PLAYING \| WON \| DEAD, consequenceText }` — the complete next view model (`consequenceText` is the just-applied option's `Consequence.text`, `null` if it had none — see `docs/00-PARKING_LOT.md` #3) |
 | `POST` | `/api/books` | Full book JSON | `201` if valid (added to `valid/`, now in the catalog) / `400` + every failed rule if invalid (added to `invalid/` + `.errors.txt`) |
 | `GET` | `/api/books/{id}/progress` | — | Saved progress `{ currentSectionId, health, updatedAt }` or `null` if none |
 | `PUT` | `/api/books/{id}/progress` | `{ currentSectionId, health }` | Confirmation (upserts the single saved row for that book) |

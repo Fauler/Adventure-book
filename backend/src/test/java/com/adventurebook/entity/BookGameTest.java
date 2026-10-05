@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 import com.adventurebook.common.DomainException;
 
 /**
- * Objective 2/US-05: "play a game — basic interactions" (no consequence effects yet,
- * see US-06/M3). Covers {@link Book#startGame()} and
+ * Objective 2/US-05 ("play a game — basic interactions") + Objective 3/US-06
+ * ("suffer consequences and manage health"). Covers {@link Book#startGame()} and
  * {@link Book#resolveMove(String, int, int)}.
  */
 class BookGameTest {
@@ -22,6 +22,10 @@ class BookGameTest {
 
     private static Option option(String description, String gotoId) {
         return new Option(description, gotoId, null);
+    }
+
+    private static Option option(String description, String gotoId, Consequence consequence) {
+        return new Option(description, gotoId, consequence);
     }
 
     private static Book book(Section... sections) {
@@ -45,6 +49,7 @@ class BookGameTest {
         assertThat(result.section().id()).isEqualTo("1");
         assertThat(result.health()).isEqualTo(Book.STARTING_HEALTH);
         assertThat(result.status()).isEqualTo(GameStatus.PLAYING);
+        assertThat(result.consequenceText()).isNull();
     }
 
     @Test
@@ -65,10 +70,68 @@ class BookGameTest {
     }
 
     @Test
-    void resolveMove_carriesHealthThroughUnchanged_noConsequencesYet() {
+    void resolveMove_withNoConsequence_carriesHealthThroughUnchanged() {
         MoveResult result = sampleBook().resolveMove("1", 0, 7);
 
         assertThat(result.health()).isEqualTo(7);
+        assertThat(result.consequenceText()).isNull();
+    }
+
+    @Test
+    void resolveMove_withLoseHealthConsequence_reducesHealthAndReturnsText() {
+        Book book = book(
+                section("1", SectionType.BEGIN,
+                        option("jump across the gap", "2",
+                                new Consequence(ConsequenceType.LOSE_HEALTH, 4, "You scrape your shoulder."))),
+                section("2", SectionType.NODE, option("go on", "3")),
+                section("3", SectionType.END));
+
+        MoveResult result = book.resolveMove("1", 0, 10);
+
+        assertThat(result.health()).isEqualTo(6);
+        assertThat(result.status()).isEqualTo(GameStatus.PLAYING);
+        assertThat(result.consequenceText()).isEqualTo("You scrape your shoulder.");
+    }
+
+    @Test
+    void resolveMove_withGainHealthConsequence_increasesHealth() {
+        Book book = book(
+                section("1", SectionType.BEGIN,
+                        option("rest a while", "2",
+                                new Consequence(ConsequenceType.GAIN_HEALTH, 3, "You feel better."))),
+                section("2", SectionType.END));
+
+        MoveResult result = book.resolveMove("1", 0, 5);
+
+        assertThat(result.health()).isEqualTo(8);
+    }
+
+    @Test
+    void resolveMove_withLoseHealthConsequence_clampsAtZeroAndReturnsDead() {
+        Book book = book(
+                section("1", SectionType.BEGIN,
+                        option("fall into the chasm", "2",
+                                new Consequence(ConsequenceType.LOSE_HEALTH, 20, "You fall to your doom."))),
+                section("2", SectionType.NODE, option("go on", "1")));
+
+        MoveResult result = book.resolveMove("1", 0, 10);
+
+        assertThat(result.health()).isEqualTo(0);
+        assertThat(result.status()).isEqualTo(GameStatus.DEAD);
+        assertThat(result.consequenceText()).isEqualTo("You fall to your doom.");
+    }
+
+    @Test
+    void resolveMove_deathTakesPriorityOverSimultaneousEnd() {
+        Book book = book(
+                section("1", SectionType.BEGIN,
+                        option("the fatal ending", "2",
+                                new Consequence(ConsequenceType.LOSE_HEALTH, 10, "It was too much."))),
+                section("2", SectionType.END));
+
+        MoveResult result = book.resolveMove("1", 0, 10);
+
+        assertThat(result.status()).isEqualTo(GameStatus.DEAD);
     }
 
     @Test

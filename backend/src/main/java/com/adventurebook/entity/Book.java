@@ -100,15 +100,15 @@ public record Book(String id, String title, String author, Difficulty difficulty
                 .findFirst()
                 .orElseThrow(() -> new DomainException(
                         "book \"" + id + "\" has no BEGIN section and cannot be played"));
-        return new MoveResult(begin, STARTING_HEALTH, GameStatus.PLAYING);
+        return new MoveResult(begin, STARTING_HEALTH, GameStatus.PLAYING, null);
     }
 
     /**
      * Resolves a single move: the player was last shown {@code currentSectionId} with
-     * {@code health}, and picked the option at {@code optionIndex}. No consequence
-     * effects are applied yet (Objective 2/US-05 — deferred to US-06/M3); {@code health}
-     * is carried through unchanged. Every failure here is a {@link DomainException}
-     * (never a 500) per the boundary/entity validation split in
+     * {@code health}, and picked the option at {@code optionIndex}. Applies that
+     * option's {@link Consequence} (if any), clamped per
+     * {@link Consequence#applyTo(int)}, per Objective 3/US-06. Every failure here is a
+     * {@link DomainException} (never a 500) per the boundary/entity validation split in
      * {@code docs/03-technical-architecture.md}.
      */
     public MoveResult resolveMove(String currentSectionId, int optionIndex, int health) {
@@ -131,7 +131,22 @@ public record Book(String id, String title, String author, Difficulty difficulty
                 .orElseThrow(() -> new DomainException(
                         "option \"" + chosen.description() + "\" points to a section that does not exist"));
 
-        GameStatus status = next.isEnding() ? GameStatus.WON : GameStatus.PLAYING;
-        return new MoveResult(next, health, status);
+        Consequence consequence = chosen.consequence();
+        int newHealth = consequence != null ? consequence.applyTo(health) : health;
+        String consequenceText = consequence != null ? consequence.text() : null;
+
+        // Death takes priority over a simultaneous END (rules 3+4 guarantee every
+        // reachable section has valid options, but nothing forbids a consequence from
+        // killing the player on the very move that would otherwise have won the game).
+        GameStatus status;
+        if (newHealth <= 0) {
+            status = GameStatus.DEAD;
+        } else if (next.isEnding()) {
+            status = GameStatus.WON;
+        } else {
+            status = GameStatus.PLAYING;
+        }
+
+        return new MoveResult(next, newHealth, status, consequenceText);
     }
 }

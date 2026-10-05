@@ -44,9 +44,11 @@ export interface PlayRequest {
   health?: number;
 }
 
-/** Response body for `POST /api/books/{id}/play`. */
+/** Response body for `POST /api/books/{id}/play`. `consequenceText` is the just-applied
+ * option's consequence flavor text (US-06), `null`/absent when the option had none. */
 export interface PlayResponse {
   section: Section;
   health: number;
   status: GameStatus;
+  consequenceText: string | null;
 }

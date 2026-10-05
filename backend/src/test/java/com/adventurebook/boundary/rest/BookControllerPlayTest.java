@@ -54,7 +54,7 @@ class BookControllerPlayTest {
     @Test
     void startsFreshGame_whenNoCurrentSectionIdGiven() {
         when(gameEngineService.play(eq("test-book"), isNull(), isNull(), isNull()))
-                .thenReturn(new MoveResult(beginSection(), 10, GameStatus.PLAYING));
+                .thenReturn(new MoveResult(beginSection(), 10, GameStatus.PLAYING, null));
 
         tester().post().uri("/api/books/test-book/play")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -27,7 +27,7 @@ orders the work already agreed in those docs.
 | M0 | Project scaffolding | prerequisite | — | ✅ Done |
 | M1 | Book validation + Home/Library | Objective 1 | US-01, US-02, US-03, US-04 (nav only) | ✅ Done |
 | M2 | Play a game — basic interactions | Objective 2 | US-05 | ✅ Done |
-| M3 | Consequences, health, game end | Objective 3 | US-06, US-07, US-08 (phase 1: simple Stop) | 🚧 To do |
+| M3 | Consequences, health, game end | Objective 3 | US-06, US-07, US-08 (phase 1: simple Stop) | ✅ Done |
 | M4 | Save & resume | Objective 4 (extra) | US-09, US-10, US-08 (phase 2: revisit Stop/Pause) | 🚧 To do |
 | M5 | Add a new book | Objective 5 (extra) | US-11 | 🚧 To do |
 | M6 | Stretch: containerize app | NFR-02 (Group C) | — | 🚧 To do |
@@ -129,7 +129,9 @@ Backend:
 - Consequence application (`LOSE_HEALTH` now; design the type extensibly per
   `docs/03-technical-architecture.md`) in `entity`, including HP clamping (floor 0, no
   hard-coded ceiling — 10 is only the starting value).
-- `/play` now also takes/returns `health`, and returns `status` (`IN_PROGRESS`/`WON`/`DEAD`).
+- `/play` now also takes/returns `health`, and returns `status` (`PLAYING`/`WON`/`DEAD`)
+  plus `consequenceText` (the just-applied option's `Consequence.text`, `null` if none —
+  resolves `docs/00-PARKING_LOT.md` #3).
 - Tests: HP never below 0; `DEAD` triggered at/below 0 regardless of normal section type;
   `WON` only on reaching an `END` section; consequence ordering.
 
