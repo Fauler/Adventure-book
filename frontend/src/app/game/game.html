@@ -1,1 +1,33 @@
-<p>Game works — play loop lands in M2.</p>
+<section class="game">
+  @if (loading()) {
+    <p class="status">Loading...</p>
+  } @else if (error()) {
+    <p class="status error">Something went wrong. Please try again.</p>
+    <button type="button" class="retry" (click)="startGame()">Retry</button>
+  } @else if (state(); as current) {
+    <p class="health">Health: {{ current.health }}</p>
+
+    <article class="section">
+      <p class="text">{{ current.section.text }}</p>
+    </article>
+
+    @if (current.status === 'PLAYING') {
+      <div class="options">
+        @for (option of current.section.options; track $index) {
+          <button type="button" class="option" (click)="chooseOption($index)">
+            {{ option.description }}
+          </button>
+        }
+      </div>
+    } @else {
+      <p class="ending" [class.won]="current.status === 'WON'" [class.dead]="current.status === 'DEAD'">
+        @if (current.status === 'WON') {
+          You won! Your quest is complete.
+        } @else {
+          You died. Your quest has ended.
+        }
+      </p>
+      <a class="back" routerLink="/">Back to Library</a>
+    }
+  }
+</section>

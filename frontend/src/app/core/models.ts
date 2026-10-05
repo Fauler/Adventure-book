@@ -18,3 +18,35 @@ export interface BookSummary {
   author: string;
   difficulty: Difficulty;
 }
+
+/** Mirrors the backend's `GameStatus` enum (Objective 2/US-05). */
+export type GameStatus = 'PLAYING' | 'WON' | 'DEAD';
+
+/** A single selectable choice, as rendered — no `gotoId`/`consequence` exposed. */
+export interface Option {
+  description: string;
+}
+
+/** The section currently shown to the player. `options` is empty for an ending. */
+export interface Section {
+  id: string;
+  text: string;
+  options: Option[];
+}
+
+/**
+ * Request body for `POST /api/books/{id}/play`. Omit `currentSectionId` (and
+ * therefore `optionIndex`/`health`) to start a fresh game at BEGIN.
+ */
+export interface PlayRequest {
+  currentSectionId?: string;
+  optionIndex?: number;
+  health?: number;
+}
+
+/** Response body for `POST /api/books/{id}/play`. */
+export interface PlayResponse {
+  section: Section;
+  health: number;
+  status: GameStatus;
+}

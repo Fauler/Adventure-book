@@ -1,6 +1,7 @@
 package com.adventurebook.control;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.stereotype.Service;
@@ -51,5 +52,14 @@ public class BookCatalogService {
                         || book.title().toLowerCase().contains(query)
                         || book.author().toLowerCase().contains(query))
                 .toList();
+    }
+
+    /**
+     * Looks up a single valid book by id (e.g. for {@code /play}). Empty if {@code id}
+     * doesn't exist or belongs to an invalid book — invalid books are never part of the
+     * catalog in the first place.
+     */
+    public Optional<Book> findById(String id) {
+        return catalog.stream().filter(book -> book.id().equals(id)).findFirst();
     }
 }

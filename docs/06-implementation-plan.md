@@ -22,16 +22,19 @@ orders the work already agreed in those docs.
 
 ## Milestone map
 
-| # | Milestone | Objective(s) | User stories | Stop & commit after |
+| # | Milestone | Objective(s) | User stories | Status |
 |---|---|---|---|---|
-| M0 | Project scaffolding | prerequisite | — | ✅ |
-| M1 | Book validation + Home/Library | Objective 1 | US-01, US-02, US-03, US-04 (nav only) | ✅ |
-| M2 | Play a game — basic interactions | Objective 2 | US-05 | ✅ |
-| M3 | Consequences, health, game end | Objective 3 | US-06, US-07, US-08 (phase 1: simple Stop) | ✅ |
-| M4 | Save & resume | Objective 4 (extra) | US-09, US-10, US-08 (phase 2: revisit Stop/Pause) | ✅ |
-| M5 | Add a new book | Objective 5 (extra) | US-11 | ✅ |
-| M6 | Stretch: containerize app | NFR-02 (Group C) | — | ✅ |
-| M7 | Stretch: token-based security + JWT | NFR-03 → NFR-04 (Group D) | — | ✅ |
+| M0 | Project scaffolding | prerequisite | — | ✅ Done |
+| M1 | Book validation + Home/Library | Objective 1 | US-01, US-02, US-03, US-04 (nav only) | ✅ Done |
+| M2 | Play a game — basic interactions | Objective 2 | US-05 | ✅ Done |
+| M3 | Consequences, health, game end | Objective 3 | US-06, US-07, US-08 (phase 1: simple Stop) | 🚧 To do |
+| M4 | Save & resume | Objective 4 (extra) | US-09, US-10, US-08 (phase 2: revisit Stop/Pause) | 🚧 To do |
+| M5 | Add a new book | Objective 5 (extra) | US-11 | 🚧 To do |
+| M6 | Stretch: containerize app | NFR-02 (Group C) | — | 🚧 To do |
+| M7 | Stretch: token-based security + JWT | NFR-03 → NFR-04 (Group D) | — | 🚧 To do |
+
+Update this column as each milestone is actually finished (not when it's merely planned
+below) — it's the at-a-glance source of truth for "where are we right now".
 
 Group A (NFR-01, centralized exception handling) and Group B (NFR-05 monolith, NFR-06
 flat-file books) are **not separate milestones** — NFR-01 is folded into M1 (built in from
@@ -96,13 +99,22 @@ Frontend:
 
 Backend:
 - `GameEngineService` + `POST /api/books/{id}/play` (stateless: takes
-  `{currentSectionId, optionIndex}`, returns the next `section`), per the API contract.
+  `{currentSectionId, optionIndex, health}`, returns `{section, health, status}`), per
+  the fixed API contract in `docs/03-technical-architecture.md` — the request/response
+  shape is one contract shared across M2/M3, not redesigned incrementally; M2 simply
+  passes `health` through unchanged (no `Consequence.applyTo()` wiring yet) and `status`
+  naturally reflects `WON` on reaching an `END` section (`DEAD` cannot occur yet since
+  health never decreases).
+- Unknown book id → `404` (new `BookNotFoundException`); illegal in-book move (bad
+  `currentSectionId`/`optionIndex`, acting on an already-ended session) → `400` via the
+  existing `DomainException`, per `docs/00-PARKING_LOT.md` entry #2's 400 leaning.
 - Boundary validation (Bean Validation) for the request shape; domain rules stay in
-  `entity`.
+  `entity` (`Book.startGame()`/`resolveMove()`).
 
 Frontend:
-- Game screen (US-05): header (book name; Stop control UI only, not wired yet; HP slot
-  reserved for M3), section text + options list, calling `/play` and re-rendering.
+- Game screen (US-05): section text + options list, calling `/play` and re-rendering;
+  end-of-game text shown once `status !== PLAYING` (full HP header/Stop control UI
+  deferred to M3 per US-06/US-07/US-08).
 
 **Stop here** → propose commit message, wait, then M3.
 

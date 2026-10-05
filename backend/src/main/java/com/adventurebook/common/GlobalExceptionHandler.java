@@ -46,6 +46,13 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(HttpStatus.BAD_REQUEST.value(), "Invalid request", List.of(ex.getMessage())));
     }
 
+    @ExceptionHandler(BookNotFoundException.class)
+    public ResponseEntity<ApiError> handleBookNotFound(BookNotFoundException ex) {
+        log.warn("Rejected request: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiError.of(HttpStatus.NOT_FOUND.value(), "Book not found", List.of(ex.getMessage())));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception ex) {
         log.error("Unexpected failure", ex);

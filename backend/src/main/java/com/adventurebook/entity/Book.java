@@ -3,8 +3,10 @@ package com.adventurebook.entity;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
+import com.adventurebook.common.DomainException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
@@ -19,6 +21,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record Book(String id, String title, String author, Difficulty difficulty, List<Section> sections) {
+
+    /** The player's HP at the start of a fresh game (Objective 2/US-05) — the brief
+     * only defines this as the *starting* value, not a hard ceiling. */
+    public static final int STARTING_HEALTH = 10;
 
     /**
      * Returns every failed rule, in plain English, ready to be written 1:1 into an
@@ -71,5 +77,61 @@ public record Book(String id, String title, String author, Difficulty difficulty
 
     public boolean isValid() {
         return validate().isEmpty();
+    }
+
+    /**
+     * Looks up a section by id. Only meaningful on a book that already passed
+     * {@link #validate()} — an invalid book has no gameplay guarantees.
+     */
+    public Optional<Section> findSection(String sectionId) {
+        return sections.stream().filter(s -> s.id().equals(sectionId)).findFirst();
+    }
+
+    /**
+     * Starts a brand-new game at the book's {@code BEGIN} section with
+     * {@link #STARTING_HEALTH}, per Objective 2/US-05 (omitting {@code currentSectionId}
+     * on {@code /play} means "start fresh"). A validated book is guaranteed to have
+     * exactly one {@code BEGIN} section (rule 1); the exception here is only a defensive
+     * fallback and should be structurally unreachable for a book that passed validation.
+     */
+    public MoveResult startGame() {
+        Section begin = sections.stream()
+                .filter(s -> s.type() == SectionType.BEGIN)
+                .findFirst()
+                .orElseThrow(() -> new DomainException(
+                        "book \"" + id + "\" has no BEGIN section and cannot be played"));
+        return new MoveResult(begin, STARTING_HEALTH, GameStatus.PLAYING);
+    }
+
+    /**
+     * Resolves a single move: the player was last shown {@code currentSectionId} with
+     * {@code health}, and picked the option at {@code optionIndex}. No consequence
+     * effects are applied yet (Objective 2/US-05 — deferred to US-06/M3); {@code health}
+     * is carried through unchanged. Every failure here is a {@link DomainException}
+     * (never a 500) per the boundary/entity validation split in
+     * {@code docs/03-technical-architecture.md}.
+     */
+    public MoveResult resolveMove(String currentSectionId, int optionIndex, int health) {
+        Section current = findSection(currentSectionId)
+                .orElseThrow(() -> new DomainException(
+                        "section \"" + currentSectionId + "\" does not exist in book \"" + id + "\""));
+
+        if (current.isEnding() || health <= 0) {
+            throw new DomainException("the game has already ended; no further moves are possible");
+        }
+
+        List<Option> options = current.options() != null ? current.options() : List.of();
+        if (optionIndex < 0 || optionIndex >= options.size()) {
+            throw new DomainException(
+                    "option index " + optionIndex + " does not exist on section \"" + currentSectionId + "\"");
+        }
+
+        Option chosen = options.get(optionIndex);
+        Section next = findSection(chosen.gotoId())
+                .orElseThrow(() -> new DomainException(
+                        "option \"" + chosen.description() + "\" points to a section that does not exist"));
+
+        GameStatus status = next.isEnding() ? GameStatus.WON : GameStatus.PLAYING;
+        return new MoveResult(next, health, status);
     }
 }
