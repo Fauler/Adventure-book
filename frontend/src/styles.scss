@@ -1,1 +1,43 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global theme — follows the assessment's fantasy-library mockup (brown/cream/gold),
+   see docs/06-implementation-plan.md M3 UI pass. Variables shared by home/game screens
+   so neither component hardcodes its own palette. */
+:root {
+  --color-ink: #3a2a1d;
+  --color-ink-soft: #5a4634;
+  --color-parchment: #f7f1e6;
+  --color-parchment-dark: #efe4d2;
+  --color-hero-bg: #4a3827;
+  --color-gold: #e2a63d;
+  --color-gold-dark: #c98a1f;
+  --color-border: rgba(58, 42, 29, 0.15);
+  --color-easy: #2f7a4f;
+  --color-easy-bg: #e3f2e8;
+  --color-medium: #a9731a;
+  --color-medium-bg: #faf0dc;
+  --color-hard: #a93226;
+  --color-hard-bg: #fbe4e1;
+  --font-display: Georgia, 'Times New Roman', serif;
+  --font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-parchment);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+}

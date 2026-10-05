@@ -1,5 +1,5 @@
 .game {
-  max-width: 42rem;
+  max-width: 48rem;
   margin: 0 auto;
   padding: 2rem 1rem;
 }
@@ -9,7 +9,7 @@
   opacity: 0.75;
 
   &.error {
-    color: #c0392b;
+    color: var(--color-hard);
   }
 }
 
@@ -24,45 +24,78 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+
+  .back {
+    color: var(--color-ink-soft);
+    text-decoration: none;
+    font-weight: 600;
+
+    &:hover {
+      color: var(--color-ink);
+    }
+  }
+
+  .title-pill {
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    background: var(--color-parchment-dark);
+    border: 1px solid var(--color-border);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
 }
 
 .health {
   font-weight: 600;
 
   &.dead {
-    color: #c0392b;
+    color: var(--color-hard);
   }
 }
 
 .stop {
   padding: 0.4rem 0.9rem;
   border-radius: 0.3rem;
-  border: 1px solid #c0392b;
+  border: 1px solid var(--color-hard);
   background: transparent;
-  color: #c0392b;
+  color: var(--color-hard);
   cursor: pointer;
 
   &:hover {
-    background: rgba(192, 57, 43, 0.08);
+    background: var(--color-hard-bg);
   }
 }
 
 .section {
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 0.5rem;
-  padding: 1.25rem;
-  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  padding: 1.75rem;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(58, 42, 29, 0.06);
 
   .consequence {
     margin: 0 0 0.75rem;
     font-style: italic;
-    color: #8a6d00;
+    color: var(--color-medium);
   }
 
   .text {
-    margin: 0;
-    line-height: 1.5;
+    margin: 0 0 1.25rem;
+    line-height: 1.6;
+  }
+
+  .prompt {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
   }
 }
 
@@ -73,15 +106,36 @@
 }
 
 .option {
-  padding: 0.75rem 1rem;
-  border-radius: 0.3rem;
-  border: 1px solid currentColor;
-  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-parchment-dark);
   text-align: left;
   cursor: pointer;
 
+  .badge {
+    flex: 0 0 auto;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--color-ink);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .description {
+    flex: 1 1 auto;
+  }
+
   &:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: #e6d8bf;
   }
 }
 
@@ -89,23 +143,23 @@
   font-size: 1.25rem;
   font-weight: 700;
   text-align: center;
-  margin: 1.5rem 0 0.75rem;
+  margin: 1.5rem 0 1rem;
 
   &.won {
-    color: #27ae60;
+    color: var(--color-easy);
   }
 
   &.dead {
-    color: #c0392b;
+    color: var(--color-hard);
   }
 }
 
-.back {
+.back-link {
   display: block;
   text-align: center;
-  padding: 0.5rem;
-  border-radius: 0.3rem;
-  background: #2c3e50;
+  padding: 0.6rem;
+  border-radius: 0.4rem;
+  background: var(--color-ink);
   color: #fff;
   text-decoration: none;
   max-width: 12rem;

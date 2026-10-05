@@ -25,9 +25,19 @@ export class Game implements OnInit {
   protected readonly state = signal<PlayResponse | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal(false);
+  /**
+   * The book's title, for the header pill only (cosmetic — never used for any game
+   * logic). Carried over via router navigation `state` from the library's "Begin
+   * Quest" link, since there's no `GET /api/books/{id}` title lookup wired up yet
+   * (that endpoint is documented but not implemented pre-M5). Falls back to a
+   * generic label if the page is opened directly/refreshed and the state is lost.
+   */
+  protected readonly bookTitle = signal<string | null>(null);
 
   ngOnInit(): void {
     this.bookId = this.route.snapshot.paramMap.get('id') ?? '';
+    const navigationTitle = history.state?.['title'] as string | undefined;
+    this.bookTitle.set(navigationTitle ?? null);
     this.startGame();
   }
 

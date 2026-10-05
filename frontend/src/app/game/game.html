@@ -6,36 +6,42 @@
     <button type="button" class="retry" (click)="startGame()">Retry</button>
   } @else if (state(); as current) {
     <header class="game-header">
-      <span class="health" [class.dead]="current.status === 'DEAD'">❤️ {{ current.health }} HP</span>
-      @if (current.status === 'PLAYING') {
-        <button type="button" class="stop" routerLink="/">Stop</button>
-      }
+      <a class="back" routerLink="/">← Back to Library</a>
+      <span class="title-pill">📖 {{ bookTitle() ?? 'Adventure' }}</span>
+      <div class="header-actions">
+        <span class="health" [class.dead]="current.status === 'DEAD'">❤️ {{ current.health }} HP</span>
+        @if (current.status === 'PLAYING') {
+          <button type="button" class="stop" routerLink="/">Stop</button>
+        }
+      </div>
     </header>
 
     <article class="section">
       @if (current.consequenceText) {
-        <p class="consequence">{{ current.consequenceText }}</p>
+        <p class="consequence">⚠️ {{ current.consequenceText }}</p>
       }
       <p class="text">{{ current.section.text }}</p>
-    </article>
 
-    @if (current.status === 'PLAYING') {
-      <div class="options">
-        @for (option of current.section.options; track $index) {
-          <button type="button" class="option" (click)="chooseOption($index)">
-            {{ option.description }}
-          </button>
-        }
-      </div>
-    } @else {
-      <p class="ending" [class.won]="current.status === 'WON'" [class.dead]="current.status === 'DEAD'">
-        @if (current.status === 'WON') {
-          You made it out alive! Your quest is complete.
-        } @else {
-          You died. Your quest has ended.
-        }
-      </p>
-      <a class="back" routerLink="/">Back to Library</a>
-    }
+      @if (current.status === 'PLAYING') {
+        <h4 class="prompt">What do you choose?</h4>
+        <div class="options">
+          @for (option of current.section.options; track $index) {
+            <button type="button" class="option" (click)="chooseOption($index)">
+              <span class="badge">{{ $index + 1 }}</span>
+              <span class="description">{{ option.description }}</span>
+            </button>
+          }
+        </div>
+      } @else {
+        <p class="ending" [class.won]="current.status === 'WON'" [class.dead]="current.status === 'DEAD'">
+          @if (current.status === 'WON') {
+            🏆 You made it out alive! Your quest is complete.
+          } @else {
+            💀 You died. Your quest has ended.
+          }
+        </p>
+        <a class="back-link" routerLink="/">Back to Library</a>
+      }
+    </article>
   }
 </section>

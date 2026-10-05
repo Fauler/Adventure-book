@@ -40,7 +40,7 @@ describe('Home', () => {
 
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('The Crystal Caverns');
-    expect(text).toContain('1 Adventure Available');
+    expect(text).toContain('1 Epic Adventure Available');
   });
 
   it('shows a "no results" state when the backend returns an empty list', () => {

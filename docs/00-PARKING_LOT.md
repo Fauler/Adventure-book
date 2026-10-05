@@ -134,6 +134,15 @@ Open questions to resolve later:
 - This changes the public API contract (`GET /api/books` response shape) — needs
   explicit sign-off before implementing, same as any other contract change in this list.
 
+**Status update (05-10-2026, UI polish pass)**: re-raised when comparing the implemented
+Home/Library screen against the mockup side-by-side. Asked the user how to proceed
+(author real per-book `description`/`estimatedMinutes`/`chapterCount`/`tags`, derive
+`chapterCount` only, or skip) — the user was unavailable to answer synchronously.
+**Decision**: left as a documented gap, no change made. Cards continue to show only
+real data (`title`/`author`/`difficulty`); no placeholder/fabricated text was added, to
+avoid presenting invented content as if it were real per-book data. Still awaiting
+explicit sign-off before touching the `GET /api/books` contract.
+
 ---
 
 ## 6 - Show the player's current HP more consistently across the gameplay screen
@@ -191,3 +200,29 @@ Open questions to resolve later (not blocking, interim assumption in place):
 - Should the same leniency be extended to `Difficulty`/`ConsequenceType` (also strict
   enums today), or are those lower-risk/out of scope since no sample data currently
   exercises a blank/unrecognized value for them?
+
+---
+
+## 8 - Mockup's per-section title and per-option "hint"/"Requires" tags don't exist in our data model
+
+Raised: 05-10-2026 (M3 UI pass)
+
+Context: the assessment mockup's game screen (`Figure 2`) shows a per-section title
+("The Cave Entrance"), an italic one-line hint under each option *before* it's chosen
+("The blue light might be magical, but the passage looks dangerous"), and a
+"Requires: Strength" tag on one option — none of these exist in the real book JSON/API
+(`Section` only has `id`/`text`/`type`/`options`; `Option` only has `description` and an
+optional `consequence`, which is deliberately only revealed *after* it fires, per
+`docs/00-PARKING_LOT.md` #3). Fabricating this content client-side (inventing a title or
+a hint string from nothing) would violate "the frontend never duplicates/invents
+business data" — so the M3 UI redesign intentionally **drops** these three mockup
+elements rather than fake them, while keeping the mockup's layout, color palette,
+numbered-option badges, and typography.
+
+Open questions to resolve later:
+- Should `Section` gain an optional `title` field, and `Option` an optional
+  `hint`/`requires` field, authored in the book JSON? That's a book-schema change
+  (affects validation rules + sample data), not just a UI change — needs explicit
+  sign-off before implementing.
+- If added, would `hint`/`requires` purely be flavor text (no gameplay effect), or does
+  "Requires: Strength" imply an actual stat/requirement system not in scope today?
