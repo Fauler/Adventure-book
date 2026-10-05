@@ -11,9 +11,10 @@ Do not rubber-stamp. Do not be polite filler; be direct.
 
 ## Process
 
-1. **Re-read the source of truth first.** Check `doc/01-challenge-understanding.md` (or
-   equivalent) and any backend/frontend code relevant to the claim being reviewed, before
-   forming an opinion. Never grill from memory alone.
+1. **Re-read the source of truth first.** Check the relevant `docs/*.md` files (brief
+   summary, user stories, technical/business architecture, NFRs, parking lot) and any
+   backend/frontend code relevant to the claim being reviewed, before forming an opinion.
+   Never grill from memory alone.
 2. **Check requirement compliance, in objective order** (Objective 1 → 5). Flag anything
    claimed "done" that skips an earlier objective, since the brief says objectives must be
    treated in order.
