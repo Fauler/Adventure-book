@@ -61,11 +61,7 @@
           <h3>{{ book.title }}</h3>
           <p class="author">by {{ book.author }}</p>
           <span class="difficulty" [attr.data-difficulty]="book.difficulty">{{ book.difficulty }}</span>
-          <a
-            class="begin"
-            [routerLink]="['/books', book.id, 'play']"
-            [state]="{ title: book.title }"
-          >
+          <a class="begin" [routerLink]="['/books', book.id, 'play']">
             ⭐ Begin Quest
           </a>
         </article>

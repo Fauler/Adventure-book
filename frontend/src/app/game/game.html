@@ -1,20 +1,68 @@
 <section class="game">
   @if (loading()) {
     <p class="status">Loading...</p>
+  } @else if (pendingResume(); as saved) {
+    <div class="modal-backdrop">
+      <div class="modal resume-modal">
+        <h3>📖 Resume your adventure?</h3>
+        @if (resumeBroken()) {
+          <p class="status error">
+            Your saved progress points to a section that no longer exists in this book
+            (it may have changed since you last played). You can't continue from there —
+            please restart instead.
+          </p>
+          <div class="modal-actions">
+            <button type="button" class="primary" (click)="resumeRestart()">Restart</button>
+          </div>
+        } @else {
+          <p>You have a saved game at section <strong>{{ saved.currentSectionId }}</strong> with
+            <strong>{{ saved.health }} HP</strong>. Continue where you left off, or restart from the
+            beginning?</p>
+          <div class="modal-actions">
+            <button type="button" class="primary" (click)="resumeContinue()">▶ Continue</button>
+            <button type="button" class="secondary" (click)="resumeRestart()">↺ Restart</button>
+          </div>
+        }
+      </div>
+    </div>
   } @else if (error()) {
     <p class="status error">Something went wrong. Please try again.</p>
     <button type="button" class="retry" (click)="startGame()">Retry</button>
   } @else if (state(); as current) {
     <header class="game-header">
-      <a class="back" routerLink="/">← Back to Library</a>
+      <a class="back" href="/" (click)="onBackClicked($event)">← Back to Library</a>
       <span class="title-pill">📖 {{ bookTitle() ?? 'Adventure' }}</span>
       <div class="header-actions">
         <span class="health" [class.dead]="current.status === 'DEAD'">❤️ {{ current.health }} HP</span>
         @if (current.status === 'PLAYING') {
-          <button type="button" class="stop" routerLink="/">Stop</button>
+          <span class="save-feedback" [class.error]="saveState() === 'error'">
+            @if (saveState() === 'saved') {
+              ✅ Saved!
+            } @else if (saveState() === 'error') {
+              ⚠️ Could not save. Please try again.
+            }
+          </span>
+          <button type="button" class="save" [disabled]="saveState() === 'saving'" (click)="saveProgress()">
+            💾 Save Progress
+          </button>
+          <button type="button" class="stop" (click)="onStopClicked()">Stop</button>
         }
       </div>
     </header>
+
+    @if (confirmStop()) {
+      <div class="modal-backdrop">
+        <div class="modal">
+          <h3>Leave without saving?</h3>
+          <p>You have unsaved progress. Save it before you go, or leave without saving?</p>
+          <div class="modal-actions">
+            <button type="button" class="primary" (click)="saveAndStop()">💾 Save &amp; Leave</button>
+            <button type="button" class="secondary" (click)="leaveWithoutSaving()">Leave without saving</button>
+            <button type="button" class="tertiary" (click)="cancelStop()">Cancel</button>
+          </div>
+        </div>
+      </div>
+    }
 
     <article class="section">
       @if (current.consequenceText) {

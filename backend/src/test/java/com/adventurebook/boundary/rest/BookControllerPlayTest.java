@@ -21,6 +21,7 @@ import com.adventurebook.common.BookNotFoundException;
 import com.adventurebook.common.DomainException;
 import com.adventurebook.control.BookCatalogService;
 import com.adventurebook.control.GameEngineService;
+import com.adventurebook.control.ProgressService;
 import com.adventurebook.entity.GameStatus;
 import com.adventurebook.entity.MoveResult;
 import com.adventurebook.entity.Option;
@@ -41,6 +42,9 @@ class BookControllerPlayTest {
 
     @MockitoBean
     private GameEngineService gameEngineService;
+
+    @MockitoBean
+    private ProgressService progressService;
 
     private MockMvcTester tester() {
         return create(mvc);

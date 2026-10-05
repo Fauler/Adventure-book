@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import com.adventurebook.common.BookNotFoundException;
 import com.adventurebook.common.DomainException;
 import com.adventurebook.entity.Book;
+import com.adventurebook.entity.GameStatus;
 import com.adventurebook.entity.MoveResult;
 
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,12 @@ import lombok.extern.slf4j.Slf4j;
  * {@link Book#resolveMove(String, int, int)}). Stateless — per
  * {@code docs/03-technical-architecture.md}, every call is self-contained; no game
  * session is held in memory between requests.
+ *
+ * <p>The one deliberate exception to "stateless" is the save slot: per
+ * {@code docs/05-business-architecture.md}, a saved game is auto-cleared the instant the
+ * game ends, so this service clears it here rather than relying on the frontend to
+ * remember to call {@code DELETE .../progress} (the backend stays the source of truth
+ * even for this side effect).
  */
 @Slf4j
 @Service
@@ -23,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class GameEngineService {
 
     private final BookCatalogService bookCatalogService;
+    private final ProgressService progressService;
 
     /**
      * Resolves one move. {@code currentSectionId == null} (or blank) means "start a
@@ -44,6 +52,12 @@ public class GameEngineService {
 
         log.info("Resolving move: bookId={}, currentSectionId={}, optionIndex={}", bookId, currentSectionId,
                 optionIndex);
-        return book.resolveMove(currentSectionId, optionIndex, health);
+        MoveResult result = book.resolveMove(currentSectionId, optionIndex, health);
+
+        if (result.status() == GameStatus.WON || result.status() == GameStatus.DEAD) {
+            progressService.delete(bookId);
+        }
+
+        return result;
     }
 }

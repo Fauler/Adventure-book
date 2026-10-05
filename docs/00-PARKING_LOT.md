@@ -226,3 +226,124 @@ Open questions to resolve later:
   sign-off before implementing.
 - If added, would `hint`/`requires` purely be flavor text (no gameplay effect), or does
   "Requires: Strength" imply an actual stat/requirement system not in scope today?
+
+---
+
+## 9 - Multiple user logins: how should saved progress be partitioned per-player in the DB?
+
+Raised: 05-10-2026 (M4 — Save & resume)
+
+Context: `docs/05-business-architecture.md`'s "Save / Resume behavior" explicitly
+defines **one save slot per book** (not per player), because there is no auth yet
+(`NFR-03`/`NFR-04` in `docs/04-non-functional-requirements.md` defer login entirely).
+`SavedProgress` (new in M4) therefore uses `bookId` alone as its primary key — any
+visitor who opens a given book sees/overwrites the *same* single save as anyone else
+who played that book on this server. That's fine for the current single-user/no-auth
+scope, but will silently misbehave the moment multiple real users share a deployment
+(player B overwrites player A's save on the same book, with no isolation and no
+warning).
+
+Open questions to resolve later (once auth/NFR-03/NFR-04 are picked up):
+- Schema change: `SavedProgress`'s primary key would need to become a composite
+  `(bookId, userId)` (or a surrogate key + unique constraint on that pair), with
+  `userId` sourced from whatever auth mechanism is eventually added (session, JWT,
+  etc.) — not decided yet since no auth exists today.
+- `GET`/`PUT`/`DELETE /api/books/{id}/progress` would need an implicit "current user"
+  (from auth context, not a client-supplied body field — never trust the client to
+  self-identify) rather than operating on the single global row.
+- Migration concern: any saves created before auth exists (today's single-slot-per-book
+  rows) would need an explicit decision on what happens to them — discard, or attach to
+  a default/anonymous user?
+- Out of scope for M4: implemented as single-slot-per-book, matching the current
+  documented (no-auth) business rule as-is — this entry is purely a forward-looking
+  note for whenever login/auth becomes a real objective.
+
+---
+
+## 10 - Orphaned saved progress when a book is later removed; no explicit "discard save"; book-id stability
+
+Raised: 05-10-2026 (M4 — Save & resume)
+
+Context/questions raised: "if I save a game for book A, close the app, then remove
+book A — what should happen? Do we have a way to remove the game (save)? Is the book
+id idempotent?"
+
+**What happens today (as implemented in M4), and the gaps found while answering**:
+
+- **Book id stability**: yes, it's idempotent/deterministic — `BookFileAdapter` derives
+  `bookId` from the book file's **name stem** (e.g. `dragon-quest.json` → id
+  `dragon-quest`), not a random/generated value, so the same filename always produces
+  the same id across restarts and re-runs of the ingestion pipeline. `SavedProgress`
+  uses that same `bookId` as its primary key (see entry #9), so a save correctly
+  survives an app/server restart as long as the book file (same name) still exists in
+  `valid/`.
+- **Removing book A while a save exists (the actual question raised)**: if the book
+  file is deleted from `valid/` (or moved out), the next catalog reload simply drops it
+  — `GET /api/books/{id}` and `POST /api/books/{id}/play` both correctly 404 for that
+  id. **However, the `saved_progress` row for that `bookId` is never cleaned up** —
+  `ProgressService`/the `/progress` endpoints don't check whether the book still
+  exists before reading/writing it, so `GET /api/books/{id}/progress` would still
+  happily return the stale save even though the book itself is gone. The **frontend**
+  gap: `Game`'s `ngOnInit` fetches book detail first — if that 404s, it falls into the
+  generic `error()` state ("Something went wrong. Please try again.") rather than a
+  specific "this book no longer exists, and any saved progress for it is now orphaned"
+  message. This is a *different* edge case from the one already handled
+  (`resumeBroken` — book still exists, but the saved **section id** inside it no
+  longer matches, e.g. after a content edit); removing the whole book was not
+  specifically handled.
+- **No standalone "discard/forget my save" action**: `DELETE /api/books/{id}/progress`
+  exists and works, but today it's only ever invoked indirectly, via **Restart** (which
+  also immediately begins a fresh playthrough) or the server-side auto-clear on
+  `WON`/`DEAD`. There is no UI affordance for "just delete my save, without starting a
+  new game right now" (e.g. a trash icon next to a "Continue" entry, if/once a
+  home-page saved-games list is built — see the open question already in entry #9's
+  sibling discussion and the still-unresolved "where do saved games show on the home
+  page" question from the M4 design notes).
+- **Same filename, different content** (not asked, but adjacent): if a book file is
+  deleted and *replaced* with a new file using the **same name** (so the same `bookId`
+  is reassigned to effectively different content/sections), any still-present save row
+  for that id would suddenly look "valid" again on a stale `currentSectionId` that may
+  no longer mean the same thing in the new content — a subtler version of the same
+  orphaning problem, currently undetected.
+
+Open questions to resolve later (not blocking M4, interim behavior: orphaned rows are
+left in place, no cleanup job, no dedicated "forget save" UI):
+- Should book removal (detected at the next ingestion/catalog reload) proactively
+  delete any orphaned `saved_progress` row for that `bookId`, rather than leaving it to
+  be discovered lazily (or never) the next time someone tries to resume?
+- Should `Game`'s book-detail-fetch failure path distinguish "book not found" (likely
+  removed) from other errors, with a clearer message than the current generic
+  "Something went wrong"?
+- Should there be an explicit "discard save" control independent of Restart (e.g. on a
+  future home-page saved-games list), so a player can clear a save without immediately
+  starting a new playthrough?
+- Should the ingestion pipeline guard against silently reassigning a `bookId` to
+  unrelated new content (e.g. warn/refuse if `valid/<name>.json` changes meaningfully
+  while a save exists for that id)? Probably over-engineering for this brief's scope,
+  but worth a conscious "no" rather than an unconsidered gap.
+
+---
+
+## 11 - Home-page "Continue" listing (US-10 AC1) — scoped out, documented deliberately
+
+Raised: 05-10-2026 (M4 — Save & resume, closing note)
+
+US-10's first acceptance criterion says: "Given I have one or more saved games, I can
+see them (e.g. **on the home page or a 'Continue' section**)..." — this reads as if a
+home-page listing might be required. `docs/05-business-architecture.md`'s "Save /
+Resume behavior" section (the tie-breaker doc for exact business-rule wording) only
+specifies the **"Resume your adventure?" modal on the game screen** as the mechanism
+for surfacing a save — it does not mention a home-page listing at all, and the
+Objective-4 mockup notes in `docs/01-challenge-understanding.md` don't show one either.
+
+**Decision**: treat "e.g. on the home page..." as one *illustrative* example of how a
+player could see their save, not a second mandatory surface — the modal already shows
+book title (via the game screen itself), last saved section id, and HP at save time,
+satisfying the AC's literal requirement ("I can see them... with book title, last
+section reached, and HP at save time"). A home-page "Continue" card/badge was
+**not implemented** in M4; this is a deliberate scope decision, not an oversight.
+
+Open question if revisited later: would a home-page "Continue" entry (e.g. a badge on
+the book card, or a dedicated section) be a meaningful UX improvement beyond the
+"quality over quantity" ceiling intended for this exercise? Low priority — the modal
+flow already fully satisfies the documented business rule.

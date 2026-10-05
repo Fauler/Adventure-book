@@ -75,6 +75,38 @@
   }
 }
 
+.save {
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--color-gold-dark);
+  background: var(--color-parchment-dark);
+  color: var(--color-ink);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--color-gold), var(--color-gold-dark));
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+}
+
+.save-feedback {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-easy);
+
+  &.error {
+    color: var(--color-hard);
+  }
+
+  &:empty {
+    display: none;
+  }
+}
+
 .section {
   border: 1px solid var(--color-border);
   border-radius: 0.6rem;
@@ -164,4 +196,70 @@
   text-decoration: none;
   max-width: 12rem;
   margin: 0 auto;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(58, 42, 29, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 10;
+}
+
+.modal {
+  width: 100%;
+  max-width: 26rem;
+  background: var(--color-parchment);
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  padding: 1.75rem;
+  box-shadow: 0 8px 24px rgba(58, 42, 29, 0.25);
+
+  h3 {
+    margin: 0 0 0.75rem;
+  }
+
+  p {
+    line-height: 1.5;
+    margin: 0 0 1.25rem;
+  }
+
+  &.resume-modal h3 {
+    color: var(--color-gold-dark);
+  }
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+
+  button {
+    padding: 0.5rem 1rem;
+    border-radius: 0.4rem;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .primary {
+    border: none;
+    background: linear-gradient(180deg, var(--color-gold), var(--color-gold-dark));
+    color: var(--color-ink);
+  }
+
+  .secondary {
+    border: 1px solid var(--color-border);
+    background: var(--color-parchment-dark);
+    color: var(--color-ink);
+  }
+
+  .tertiary {
+    border: none;
+    background: transparent;
+    color: var(--color-ink-soft);
+    text-decoration: underline;
+  }
 }

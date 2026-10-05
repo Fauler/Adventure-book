@@ -283,6 +283,13 @@ deliberately sequencing this after Save:
    point confirm whether a separate "Pause" is still wanted, or if "Stop" (with an
    optional save prompt) fully covers the requirement.
 
+**Resolved in M4**: no separate "Pause" control was added. "Stop" (with the
+unsaved-progress save prompt) fully covers "stop/pause the game" — there is no
+real-time element to pause, and a saved game is, by definition, resumable later via
+US-10, which is functionally equivalent to "pausing." Any other exit point from the
+game screen (e.g. the header's "← Back to Library" link) must go through the same
+unsaved-progress check as "Stop," not bypass it.
+
 Do not build confirmation/unsaved-progress logic as part of this story — that behavior
 belongs to the revisit pass once US-09 is done.
 

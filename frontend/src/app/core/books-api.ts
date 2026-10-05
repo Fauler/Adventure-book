@@ -1,13 +1,13 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
-import { BookSummary, Difficulty } from './models';
+import { BookDetail, BookSummary, Difficulty, SaveProgressRequest, SavedProgress } from './models';
 
 /**
- * Thin wrapper around `GET /api/books`, mirroring the backend API contract 1:1
- * (see docs/03-technical-architecture.md). No client-side filtering/transformation —
- * `search`/`difficulty` are forwarded as-is for the backend to apply.
+ * Thin wrapper around the book catalog + save/resume endpoints, mirroring the backend
+ * API contract 1:1 (see docs/03-technical-architecture.md). No client-side filtering/
+ * transformation — `search`/`difficulty` are forwarded as-is for the backend to apply.
  */
 @Injectable({ providedIn: 'root' })
 export class BooksApi {
@@ -22,5 +22,31 @@ export class BooksApi {
       params = params.set('difficulty', difficulty);
     }
     return this.http.get<BookSummary[]>('/api/books', { params });
+  }
+
+  /** `GET /api/books/{id}` — full detail (all sections), used by the game screen. */
+  getDetail(bookId: string): Observable<BookDetail> {
+    return this.http.get<BookDetail>(`/api/books/${bookId}`);
+  }
+
+  /**
+   * `GET /api/books/{id}/progress` — the single saved game for this book, or `null`
+   * when nothing is saved (backend returns `204 No Content`, which `HttpClient` surfaces
+   * as a `null` body).
+   */
+  getProgress(bookId: string): Observable<SavedProgress | null> {
+    return this.http
+      .get<SavedProgress | null>(`/api/books/${bookId}/progress`, { observe: 'response' })
+      .pipe(map((response) => response.body));
+  }
+
+  /** `PUT /api/books/{id}/progress` — saves/overwrites the single save slot (US-09). */
+  saveProgress(bookId: string, request: SaveProgressRequest): Observable<SavedProgress> {
+    return this.http.put<SavedProgress>(`/api/books/${bookId}/progress`, request);
+  }
+
+  /** `DELETE /api/books/{id}/progress` — clears the save slot (Restart/"discard"). */
+  deleteProgress(bookId: string): Observable<void> {
+    return this.http.delete<void>(`/api/books/${bookId}/progress`);
   }
 }

@@ -44,6 +44,36 @@ export interface PlayRequest {
   health?: number;
 }
 
+/**
+ * Full detail of a book (`GET /api/books/{id}`) — includes every section. Used both to
+ * render the "begin quest" step and, per `docs/05-business-architecture.md`'s "Save /
+ * Resume behavior", to look up a saved section's content locally when the player
+ * chooses **Continue** (resuming never calls `/play` for a move that was already made).
+ */
+export interface BookDetail {
+  id: string;
+  title: string;
+  author: string;
+  difficulty: Difficulty;
+  sections: Section[];
+}
+
+/**
+ * Response body for `GET`/`PUT /api/books/{id}/progress` (US-09/US-10). A `GET` with no
+ * save returns `204 No Content` (modeled as `null` by `BooksApi.getProgress`).
+ */
+export interface SavedProgress {
+  currentSectionId: string;
+  health: number;
+  updatedAt: string;
+}
+
+/** Request body for `PUT /api/books/{id}/progress` (US-09). */
+export interface SaveProgressRequest {
+  currentSectionId: string;
+  health: number;
+}
+
 /** Response body for `POST /api/books/{id}/play`. `consequenceText` is the just-applied
  * option's consequence flavor text (US-06), `null`/absent when the option had none. */
 export interface PlayResponse {
