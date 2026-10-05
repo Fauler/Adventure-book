@@ -69,12 +69,35 @@ everything — **quality over quantity**.
 
 ## Sample data provided (`assessment-material/adventure-book-fullstack/books/`)
 
+**Correction (made during M1 implementation):** the "looks valid" statuses below were
+based on a partial read of the files before validation logic existed. A full read plus
+running the actual validator (`Book.validate()`, all 4 rules, against the complete files)
+shows **all 4 sample files are in fact invalid**. `crystal-caverns.json` and
+`pirates-jade-sea.json` each contain their own `NODE` section `666` with no options — the
+exact same orphan-node trap as `the-prisoner.json` — and `pirates-jade-sea.json` also has
+an option with `gotoId: 999`, which matches no section id. This looks like a deliberate,
+repeated edge case (to catch implementations that only check reachable sections, or that
+trust a file-name/mockup pairing instead of validating), not a defect in the validator.
+No sample book is valid as shipped; `GET /api/books` legitimately returns an empty list
+until a book without these issues is ingested.
+
 | File | Status | Notes |
 |---|---|---|
-| `crystal-caverns.json` | looks valid | used as the home-page mockup example |
-| `pirates-jade-sea.json` | looks valid | |
+| `crystal-caverns.json` | **invalid** | section `666` (`NODE`) has no options — orphaned/unreachable node (reachable via section `900`'s "Investigate the movement" option, but still fails the "non-ending section has no options" rule). Also uses a `GAIN_HEALTH` consequence type not mentioned in the original sample review. |
+| `pirates-jade-sea.json` | **invalid** | same `666`-orphan-node issue, plus a dangling `gotoId: 999` (no section with that id exists). |
 | `the-prisoner.json` | **invalid** | contains section `666` (`NODE`) with no options — orphaned/unreachable node, violates the "non-ending section has no options" rule. Good edge case for validation logic. Also mixes numeric and string `id` types (`1`, `"500"`, `"1000"`). |
 | `dragon-quest.json` | **invalid / corrupt** | file is 0 bytes (empty). Good edge case for "book fails to parse" handling. |
+
+**Fixed variants (my own decision, not required by the brief):** to have real,
+playable valid books available (rather than only an empty catalog), hand-corrected
+`*_FIXED.json` copies of the 3 structurally-fixable files were added at
+`backend/src/test/resources/sample-books/*_FIXED.json`, with every change recorded in
+the sibling `FIXES.md` in that folder. `dragon-quest.json` has no fixed variant (it's
+genuinely empty — nothing to correct without inventing content). All 7 files (4
+originals + 3 fixed) are seeded in `backend/data/books/incoming/`; the ingestion
+pipeline sorts the 3 `_FIXED` ones into `valid/` and the 4 originals stay `invalid/`
+with their respective `.errors.txt`, so `GET /api/books` now returns 3 real books while
+still demonstrating correct rejection of the genuinely broken originals.
 
 ### Book JSON shape (from `the-prisoner.json`)
 

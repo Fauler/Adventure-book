@@ -152,3 +152,41 @@ Open questions to resolve later:
 - Is this purely cosmetic, or does it reveal a real UX gap (player unsure of their HP
   right before a risky choice)? Nothing reported as confusing so far — purely an idea
   to evaluate later, not a known bug.
+
+---
+
+## 7 - How malformed/inconsistent book input (beyond the 4 official validity rules) is handled
+
+Raised: 05-10-2026 (M1)
+
+The brief's 4 validity rules don't say anything about *technical* input inconsistencies
+below the rule level — things like ids/`gotoId`s being authored as either a JSON number
+(`"gotoId": 1000`) or a quoted string (`"gotoId": "1000"`) in the same file, or a
+section's `type` being blank/unrecognized (`"type": ""`). Left unhandled, these would
+either crash the whole file's parse with a generic Jackson exception (surfaced to the
+operator as "book file is empty or not valid JSON", which is misleading — the JSON
+itself is syntactically valid) or silently misbehave.
+
+**This is my own decision, not something the brief or the architecture docs required** —
+documenting it here rather than silently baking it in:
+
+- **Mixed numeric/string ids and `gotoId`s** (e.g. `"id": 1` vs `"id": "500"`,
+  `"gotoId": 1000` unquoted vs `"gotoId": "1000"` quoted) are normalized to `String` at
+  parse time (`FlexibleStringDeserializer`), so rule 3's `gotoId` comparison is always
+  type-safe regardless of how the source file authored each id. This was already in
+  place from the start of M1 (the sample data itself mixes both forms).
+- **A blank/missing/unrecognized section `type`** (e.g. `"type": ""` or a typo like
+  `"BEGUN"`) is now normalized to `null` at parse time (`FlexibleSectionTypeDeserializer`)
+  instead of aborting the whole book's parse. `Book.validate()` turns a `null` type into
+  its own specific, diagnosable error ("section X has a missing or unrecognized type")
+  rather than one generic "not valid JSON" message that hides which section/field is
+  actually broken.
+
+Open questions to resolve later (not blocking, interim assumption in place):
+- Should a blank/unrecognized `type` be treated as a 5th official invalidity rule (listed
+  explicitly in `docs/05-business-architecture.md`), or is "technical parse leniency with
+  a clear error message" sufficient without formalizing it as a named rule? Currently
+  implemented as the latter.
+- Should the same leniency be extended to `Difficulty`/`ConsequenceType` (also strict
+  enums today), or are those lower-risk/out of scope since no sample data currently
+  exercises a blank/unrecognized value for them?

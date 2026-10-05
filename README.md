@@ -33,7 +33,11 @@ cd backend
 - Health check: http://localhost:8080/actuator/health
 - Book catalog flat files: `backend/data/books/{incoming,valid,invalid}` — JSON files
   dropped in `incoming/` are validated and sorted into `valid/`/`invalid/`
-  (+ `<name>.errors.txt` on failure) on every startup.
+  (+ `<name>.errors.txt` on failure) on every startup. The repo ships with the sample
+  books already sorted and committed in `valid/`/`invalid/` (3 corrected/playable books
+  in `valid/`, the 4 originally-provided files + their error reports in `invalid/` —
+  see `backend/src/test/resources/sample-books/FIXES.md` for what was corrected and
+  why); `incoming/` starts empty and is only the drop zone for adding new books.
 - Saved-game data: file-based H2 database under `backend/data/db/` (gitignored,
   recreated automatically).
 
@@ -53,6 +57,8 @@ npm start   # ng serve
 ```
 
 - App: http://localhost:4200
+- `ng serve` proxies `/api/*` to `http://localhost:8080` (see `frontend/proxy.conf.json`),
+  so start the backend first if you want the library page to show real data.
 
 Run frontend unit tests:
 

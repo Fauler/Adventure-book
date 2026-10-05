@@ -1,1 +1,57 @@
-<p>Home works — library grid lands in M1.</p>
+<section class="hero">
+  <h1>Adventure Awaits</h1>
+  <p class="pitch">
+    Pick a story, make your choices, and see how your quest unfolds — one section at a
+    time, with your health on the line.
+  </p>
+  <p class="count">
+    @if (!loading() && !error()) {
+      {{ books().length }} Adventure{{ books().length === 1 ? '' : 's' }} Available
+    }
+  </p>
+</section>
+
+<section class="library">
+  <div class="controls">
+    <input
+      type="search"
+      class="search"
+      placeholder="Search by title or author..."
+      [value]="searchTerm()"
+      (input)="onSearchInput($any($event.target).value)"
+      aria-label="Search books"
+    />
+
+    <div class="filter-pills" role="group" aria-label="Filter by difficulty">
+      @for (filter of difficultyFilters; track filter.value) {
+        <button
+          type="button"
+          class="pill"
+          [class.selected]="selectedDifficulty() === filter.value"
+          (click)="onDifficultySelect(filter.value)"
+        >
+          {{ filter.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="status">Loading adventures...</p>
+  } @else if (error()) {
+    <p class="status error">Something went wrong loading the library. Please try again.</p>
+  } @else if (books().length === 0) {
+    <p class="status">No adventures match your search.</p>
+  } @else {
+    <div class="grid">
+      @for (book of books(); track book.id) {
+        <article class="card">
+          <h2>{{ book.title }}</h2>
+          <p class="author">by {{ book.author }}</p>
+          <span class="difficulty" [attr.data-difficulty]="book.difficulty">{{ book.difficulty }}</span>
+          <a class="begin" [routerLink]="['/books', book.id, 'play']">Begin Quest</a>
+        </article>
+      }
+    </div>
+  }
+</section>

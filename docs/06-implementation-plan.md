@@ -73,9 +73,12 @@ Backend:
   flowchart in `docs/03-technical-architecture.md`, run at startup (US-01).
 - `GET /api/books` (list, valid only) with search/filter query params, per the API contract
   table.
-- Unit tests: all 4 validity rules individually, plus the real sample files
-  (`the-prisoner.json` → invalid/orphan node; `dragon-quest.json` → invalid/corrupt;
-  the other two → valid).
+- Unit tests: all 4 validity rules individually, plus the real sample files. A full
+  read of all 4 files (not just `the-prisoner.json`/`dragon-quest.json`) shows **all are
+  actually invalid** — `crystal-caverns.json` and `pirates-jade-sea.json` each contain
+  their own orphan `NODE` section `666` with no options, and `pirates-jade-sea.json` also
+  has a dangling `gotoId: 999`. See the correction note in
+  `docs/01-challenge-understanding.md`'s sample-data table.
 
 Frontend:
 - Home/library page (US-02, US-03): book grid, search box, filter pills, calling

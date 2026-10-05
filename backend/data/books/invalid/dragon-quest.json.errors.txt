@@ -1,0 +1,2 @@
+FAILED: book file is empty or not valid JSON: No content to map due to end-of-input
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); byte offset: #UNKNOWN]

@@ -1,0 +1,2 @@
+FAILED: option "Interrogate the captured pirate in the brig" at section 1 has gotoId "999" which does not match any existing section id
+FAILED: section 666 is a NODE with no options

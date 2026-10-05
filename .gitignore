@@ -16,11 +16,10 @@ backend/target/
 backend/.mvn/wrapper/*.jar
 HELP.md
 
-# ---- Backend generated data (books ingestion output + H2 files) ----
-backend/data/books/valid/*
-!backend/data/books/valid/.gitkeep
-backend/data/books/invalid/*
-!backend/data/books/invalid/.gitkeep
+# ---- Backend generated data (H2 files only; books pipeline output IS versioned) ----
+# backend/data/books/valid/ and invalid/ are intentionally tracked: the sample books are
+# committed already sorted into their correct outcome, so a fresh clone ships with a
+# real, reviewable catalog without requiring anyone to re-run the ingestion pipeline.
 backend/data/db/
 
 # ---- Node / Angular (frontend) ----
