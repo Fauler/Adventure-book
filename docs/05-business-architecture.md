@@ -159,6 +159,13 @@ This **only disambiguates filenames on disk** — it does not solve (and was nev
 to solve) telling two same-titled books apart *in the UI* itself; that's tracked
 separately as an open question in `00-PARKING_LOT.md`.
 
+**Resubmitting identical content is idempotent.** If a user clicks "Submit book" more
+than once without changing anything (same title *and* byte-identical JSON), the numeric
+suffix is **not** incremented again — the existing `slug[_N].json` file is reused as-is
+(same outcome: same book id if valid, same rejection reasons if invalid). Two genuinely
+different submissions that merely happen to share a title still each get their own
+numbered file, per the paragraph above.
+
 ---
 
 ## Traceability back to user stories

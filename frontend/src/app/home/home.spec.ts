@@ -64,4 +64,13 @@ describe('Home', () => {
     const req = httpMock.expectOne((r) => r.url === '/api/books' && r.params.get('difficulty') === 'EASY');
     req.flush([]);
   });
+
+  it('renders an "+ Add a new book" entry point linking to /books/new', () => {
+    httpMock.expectOne((r) => r.url === '/api/books').flush([]);
+    fixture.detectChanges();
+
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a.add-book-link') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/books/new');
+    expect(link.textContent).toContain('Add a new book');
+  });
 });

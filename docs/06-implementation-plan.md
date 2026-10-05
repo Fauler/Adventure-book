@@ -29,7 +29,7 @@ orders the work already agreed in those docs.
 | M2 | Play a game — basic interactions | Objective 2 | US-05 | ✅ Done |
 | M3 | Consequences, health, game end | Objective 3 | US-06, US-07, US-08 (phase 1: simple Stop) | ✅ Done |
 | M4 | Save & resume | Objective 4 (extra) | US-09, US-10, US-08 (phase 2: revisit Stop/Pause) | ✅ Done |
-| M5 | Add a new book | Objective 5 (extra) | US-11 | 🚧 To do |
+| M5 | Add a new book | Objective 5 (extra) | US-11 | ✅ Done |
 | M6 | Stretch: containerize app | NFR-02 (Group C) | — | 🚧 To do |
 | M7 | Stretch: token-based security + JWT | NFR-03 → NFR-04 (Group D) | — | 🚧 To do |
 

@@ -49,4 +49,17 @@ export class BooksApi {
   deleteProgress(bookId: string): Observable<void> {
     return this.http.delete<void>(`/api/books/${bookId}/progress`);
   }
+
+  /**
+   * `POST /api/books` (US-11) — registers a new book at runtime from raw JSON text.
+   * Re-runs the exact same validation as startup ingestion; the backend returns `201`
+   * + the new book's summary on success, or `400` + every failed rule (see
+   * {@link ApiError}) on rejection. The frontend only pre-checks JSON *syntax* before
+   * calling this — all business-rule validation happens backend-side.
+   */
+  addBook(rawJson: string): Observable<BookSummary> {
+    return this.http.post<BookSummary>('/api/books', rawJson, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 }

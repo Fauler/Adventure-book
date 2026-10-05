@@ -46,6 +46,13 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(HttpStatus.BAD_REQUEST.value(), "Invalid request", List.of(ex.getMessage())));
     }
 
+    @ExceptionHandler(BookValidationException.class)
+    public ResponseEntity<ApiError> handleBookValidation(BookValidationException ex) {
+        log.warn("Rejected book submission: {}", ex.reasons());
+        return ResponseEntity.badRequest()
+                .body(ApiError.of(HttpStatus.BAD_REQUEST.value(), "Book validation failed", ex.reasons()));
+    }
+
     @ExceptionHandler(BookNotFoundException.class)
     public ResponseEntity<ApiError> handleBookNotFound(BookNotFoundException ex) {
         log.warn("Rejected request: {}", ex.getMessage());

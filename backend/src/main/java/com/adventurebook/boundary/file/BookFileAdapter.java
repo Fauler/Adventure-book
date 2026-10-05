@@ -6,11 +6,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.adventurebook.common.BookValidationException;
 import com.adventurebook.entity.Book;
 
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +80,50 @@ public class BookFileAdapter {
             }
         }
         return books;
+    }
+
+    /**
+     * Registers a book submitted at runtime via {@code POST /api/books} (US-11):
+     * parses and validates it with the exact same rules as the startup ingestion
+     * pipeline, then writes it straight to {@code valid/} or {@code invalid/} (+
+     * {@code .errors.txt}) — no round-trip through {@code incoming/} is needed since
+     * the content already arrived in-memory, not as a dropped file. The filename is a
+     * slug of the book's title (de-duplicated with a numeric suffix on collision), per
+     * `docs/05-business-architecture.md`'s "Book file naming" section.
+     *
+     * <p>Resubmitting byte-identical content (e.g. clicking "Submit book" more than
+     * once without editing anything) is idempotent — it reuses the already-written
+     * {@code slug[_N].json} file instead of minting a new numbered variant each time
+     * (see {@link #findIdenticalSubmission}). Two genuinely different books that
+     * happen to share a title still each get their own numbered file, as designed.
+     *
+     * @return the validated {@link Book}, with its final slug {@code id}
+     * @throws BookValidationException carrying every failed rule if rejected
+     */
+    public Book registerBook(String rawJson) {
+        ensureDirectoriesExist();
+
+        Book parsed;
+        try {
+            parsed = parseContent("pending", rawJson);
+        } catch (RuntimeException e) {
+            throw new BookValidationException(List.of("book payload is empty or not valid JSON: " + e.getMessage()));
+        }
+
+        List<String> errors = parsed.validate();
+        String slug = slugify(parsed.title());
+        String filename = findIdenticalSubmission(slug, rawJson).orElseGet(() -> uniqueFilename(slug));
+
+        if (!errors.isEmpty()) {
+            writeInvalid(filename, rawJson, errors);
+            log.warn("Book submission rejected: filename={}, reasons={}", filename, errors);
+            throw new BookValidationException(errors);
+        }
+
+        writeValid(filename, rawJson);
+        String finalId = stem(filename);
+        log.info("Book registered via API: id={}", finalId);
+        return new Book(finalId, parsed.title(), parsed.author(), parsed.difficulty(), parsed.sections());
     }
 
     private void processIncomingFile(Path file) {
@@ -184,5 +232,63 @@ public class BookFileAdapter {
 
     private static String errorsFilename(String filename) {
         return filename + ".errors.txt";
+    }
+
+    /**
+     * Slugifies a book title into a filename stem — lowercased, non-alphanumeric runs
+     * collapsed to a single {@code _}, leading/trailing {@code _} trimmed (e.g.
+     * {@code "The Crystal Caverns"} -&gt; {@code "the_crystal_caverns"}). Falls back to
+     * {@code "book"} if the title has no alphanumeric characters at all.
+     */
+    private static String slugify(String title) {
+        String source = title == null ? "" : title;
+        String slug = source.toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "_")
+                .replaceAll("^_+|_+$", "");
+        return slug.isEmpty() ? "book" : slug;
+    }
+
+    /**
+     * Appends an incrementing numeric suffix ({@code _2}, {@code _3}, ...) until a
+     * filename that doesn't already exist in either {@code valid/} or {@code invalid/}
+     * is found, per `docs/05-business-architecture.md`'s collision rule.
+     */
+    private String uniqueFilename(String slug) {
+        String candidate = slug + ".json";
+        int suffix = 2;
+        while (Files.exists(validDir.resolve(candidate)) || Files.exists(invalidDir.resolve(candidate))) {
+            candidate = slug + "_" + suffix + ".json";
+            suffix++;
+        }
+        return candidate;
+    }
+
+    /**
+     * Resubmitting the exact same JSON (e.g. a user clicking "Submit book" more than
+     * once without changing anything) must not pile up a new {@code _2}/{@code _3}/...
+     * file every time — this looks for an existing {@code slug[_N].json} file (in
+     * either {@code valid/} or {@code invalid/}) whose content is byte-identical to
+     * what's being submitted now, and reuses its filename so the resubmission is a
+     * no-op rather than a new entry.
+     */
+    private Optional<String> findIdenticalSubmission(String slug, String rawJson) {
+        Pattern sameSlug = Pattern.compile(Pattern.quote(slug) + "(_\\d+)?\\.json");
+        for (Path dir : List.of(validDir, invalidDir)) {
+            for (Path candidate : listJsonFiles(dir)) {
+                String name = candidate.getFileName().toString();
+                if (!sameSlug.matcher(name).matches()) {
+                    continue;
+                }
+                try {
+                    if (Files.readString(candidate).equals(rawJson)) {
+                        return Optional.of(name);
+                    }
+                } catch (IOException e) {
+                    log.warn("Could not read {} while checking for a duplicate submission: {}",
+                            name, e.getMessage());
+                }
+            }
+        }
+        return Optional.empty();
     }
 }

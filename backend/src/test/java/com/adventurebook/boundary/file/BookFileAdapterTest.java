@@ -1,6 +1,7 @@
 package com.adventurebook.boundary.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.adventurebook.common.BookValidationException;
 import com.adventurebook.entity.Book;
 
 /**
@@ -30,6 +32,18 @@ import com.adventurebook.entity.Book;
  * assessed, so these assertions reflect the actual (corrected) outcome.
  */
 class BookFileAdapterTest {
+
+    private static final String VALID_BOOK_JSON = """
+            {
+              "title": "A Tiny Tale",
+              "author": "Tester",
+              "difficulty": "EASY",
+              "sections": [
+                { "id": "1", "text": "Begin.", "type": "BEGIN", "options": [ { "description": "Go", "gotoId": "2" } ] },
+                { "id": "2", "text": "The End.", "type": "END", "options": [] }
+              ]
+            }
+            """;
 
     @TempDir
     Path tempDir;
@@ -127,5 +141,91 @@ class BookFileAdapterTest {
         // All 4 bundled sample fixtures are, in fact, invalid once every section is
         // checked (see class-level note) — the catalog built from valid/ is empty.
         assertThat(books).isEmpty();
+    }
+
+    @Test
+    void registerBookWritesValidBookToValidDirWithSlugFilename() throws IOException {
+        Book registered = adapter.registerBook(VALID_BOOK_JSON);
+
+        assertThat(registered.id()).isEqualTo("a_tiny_tale");
+        assertThat(registered.title()).isEqualTo("A Tiny Tale");
+        assertThat(validDir.resolve("a_tiny_tale.json")).exists();
+        assertThat(invalidDir.resolve("a_tiny_tale.json")).doesNotExist();
+    }
+
+    @Test
+    void registerBookAppendsNumericSuffixOnTitleCollision() {
+        adapter.registerBook(VALID_BOOK_JSON);
+        Book second = adapter.registerBook(VALID_BOOK_JSON.replace("The End.", "A different ending."));
+
+        assertThat(second.id()).isEqualTo("a_tiny_tale_2");
+        assertThat(validDir.resolve("a_tiny_tale_2.json")).exists();
+    }
+
+    @Test
+    void registerBookResubmittingIdenticalContentIsIdempotentNotDuplicated() {
+        Book first = adapter.registerBook(VALID_BOOK_JSON);
+        Book second = adapter.registerBook(VALID_BOOK_JSON);
+        Book third = adapter.registerBook(VALID_BOOK_JSON);
+
+        assertThat(first.id()).isEqualTo("a_tiny_tale");
+        assertThat(second.id()).isEqualTo("a_tiny_tale");
+        assertThat(third.id()).isEqualTo("a_tiny_tale");
+        assertThat(validDir.resolve("a_tiny_tale_2.json")).doesNotExist();
+        assertThat(adapter.loadValidBooks()).hasSize(1);
+    }
+
+    @Test
+    void registerBookResubmittingIdenticalInvalidContentDoesNotPileUpFiles() {
+        String noBeginNoEnd = """
+                {
+                  "title": "Broken Tale",
+                  "author": "Tester",
+                  "difficulty": "EASY",
+                  "sections": [
+                    { "id": "1", "text": "Only a node.", "type": "NODE", "options": [] }
+                  ]
+                }
+                """;
+
+        assertThatThrownBy(() -> adapter.registerBook(noBeginNoEnd)).isInstanceOf(BookValidationException.class);
+        assertThatThrownBy(() -> adapter.registerBook(noBeginNoEnd)).isInstanceOf(BookValidationException.class);
+        assertThatThrownBy(() -> adapter.registerBook(noBeginNoEnd)).isInstanceOf(BookValidationException.class);
+
+        assertThat(invalidDir.resolve("broken_tale.json")).exists();
+        assertThat(invalidDir.resolve("broken_tale_2.json")).doesNotExist();
+        assertThat(invalidDir.resolve("broken_tale_3.json")).doesNotExist();
+    }
+
+    @Test
+    void registerBookRejectsAnInvalidBookAndWritesErrorsFile() throws IOException {
+        String noBeginNoEnd = """
+                {
+                  "title": "Broken Tale",
+                  "author": "Tester",
+                  "difficulty": "EASY",
+                  "sections": [
+                    { "id": "1", "text": "Only a node.", "type": "NODE", "options": [] }
+                  ]
+                }
+                """;
+
+        assertThatThrownBy(() -> adapter.registerBook(noBeginNoEnd))
+                .isInstanceOf(BookValidationException.class)
+                .satisfies(e -> assertThat(((BookValidationException) e).reasons())
+                        .anyMatch(r -> r.contains("no BEGIN section"))
+                        .anyMatch(r -> r.contains("no END section")));
+
+        assertThat(validDir.resolve("broken_tale.json")).doesNotExist();
+        assertThat(invalidDir.resolve("broken_tale.json")).exists();
+        assertThat(invalidDir.resolve("broken_tale.json.errors.txt")).exists();
+    }
+
+    @Test
+    void registerBookRejectsMalformedJson() {
+        assertThatThrownBy(() -> adapter.registerBook("{not valid json"))
+                .isInstanceOf(BookValidationException.class)
+                .satisfies(e -> assertThat(((BookValidationException) e).reasons())
+                        .anyMatch(r -> r.contains("not valid JSON")));
     }
 }

@@ -1,0 +1,68 @@
+<section class="add-book">
+  <a class="back" href="/" (click)="onBackClicked($event)">&larr; Back to Library</a>
+
+  @if (addedBook(); as book) {
+    <div class="panel success">
+      <h1>✅ Book added!</h1>
+      <p>
+        <strong>{{ book.title }}</strong> by {{ book.author }} ({{ book.difficulty }}) is now in the
+        library &mdash; no restart needed.
+      </p>
+      <div class="actions">
+        <button type="button" class="primary" (click)="onAddAnother()">+ Add another</button>
+        <button type="button" class="secondary" (click)="onGoToLibrary()">📚 Go to Library</button>
+      </div>
+    </div>
+  } @else {
+    <div class="panel">
+      <h1>📘 Add a new book</h1>
+      <p class="pitch">
+        Paste a book's JSON below &mdash; the same shape as any file in
+        <code>data/books/</code> &mdash; or load it from a file. Every validation rule is
+        checked by the server; any rejection reasons are shown exactly as returned.
+      </p>
+
+      <div class="input-methods">
+        <label class="file-picker">
+          📎 Choose file
+          <input type="file" accept="application/json,.json" (change)="onFileSelected($event)" hidden />
+        </label>
+        <span class="hint">or paste/type below, or drag a .json file onto the box</span>
+      </div>
+
+      <textarea
+        class="json-input"
+        [class.drag-over]="dragOver()"
+        rows="16"
+        spellcheck="false"
+        placeholder="Paste book JSON here..."
+        [value]="jsonText()"
+        (input)="onTextChange($any($event.target).value)"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave()"
+        (drop)="onDrop($event)"
+      ></textarea>
+
+      @if (syntaxError(); as msg) {
+        <p class="status error">⚠️ {{ msg }}</p>
+      }
+
+      @if (rejectionReasons(); as reasons) {
+        <div class="status error rejection">
+          <p>The book was rejected for the following reason{{ reasons.length === 1 ? '' : 's' }}:</p>
+          <ul>
+            @for (reason of reasons; track reason) {
+              <li>{{ reason }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="actions">
+        <button type="button" class="primary" [disabled]="submitting()" (click)="onSubmit()">
+          {{ submitting() ? 'Submitting…' : '⬆ Submit book' }}
+        </button>
+      </div>
+    </div>
+  }
+</section>

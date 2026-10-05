@@ -40,6 +40,20 @@ public class BookCatalogService {
     }
 
     /**
+     * Registers a book submitted at runtime (US-11) and rebuilds the catalog so it
+     * appears immediately, without a restart. Delegates all parsing/validation/
+     * file-naming to {@link BookFileAdapter#registerBook} — this service only
+     * orchestrates "register, then reload."
+     *
+     * @throws com.adventurebook.common.BookValidationException if the book is invalid
+     */
+    public synchronized Book addBook(String rawJson) {
+        Book registered = bookFileAdapter.registerBook(rawJson);
+        ingestAndReload();
+        return registered;
+    }
+
+    /**
      * Returns valid books matching the given criteria. {@code search} matches
      * case-insensitively against title or author; {@code difficulty} is an exact
      * match. Both are optional — {@code null}/blank means "no filter".

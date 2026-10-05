@@ -2,6 +2,7 @@ package com.adventurebook.boundary.rest;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.adventurebook.common.BookNotFoundException;
@@ -54,6 +56,21 @@ public class BookController {
         return bookCatalogService.list(search, difficulty).stream()
                 .map(BookSummaryResponse::from)
                 .toList();
+    }
+
+    /**
+     * Registers a new book at runtime (US-11): the request body is the same JSON
+     * shape as any file in {@code data/books/}. Re-runs the exact same validation as
+     * startup ingestion; on success the book is written to {@code valid/} and
+     * immediately appears in the catalog (no restart needed), on failure every failed
+     * rule is returned as a {@code 400} (see {@link com.adventurebook.common.BookValidationException}).
+     */
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public BookSummaryResponse addBook(@RequestBody String rawJson) {
+        log.info("Add-book request received");
+        Book book = bookCatalogService.addBook(rawJson);
+        return BookSummaryResponse.from(book);
     }
 
     /**

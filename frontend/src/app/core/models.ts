@@ -82,3 +82,15 @@ export interface PlayResponse {
   status: GameStatus;
   consequenceText: string | null;
 }
+
+/**
+ * Uniform error body returned by the backend for any rejected request (see
+ * `ApiError` in the backend). Used by the add-a-new-book screen (US-11) to display
+ * every failed validation rule verbatim, one per line.
+ */
+export interface ApiError {
+  timestamp: string;
+  status: number;
+  error: string;
+  messages: string[];
+}
