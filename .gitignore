@@ -16,6 +16,13 @@ backend/target/
 backend/.mvn/wrapper/*.jar
 HELP.md
 
+# ---- Backend generated data (books ingestion output + H2 files) ----
+backend/data/books/valid/*
+!backend/data/books/valid/.gitkeep
+backend/data/books/invalid/*
+!backend/data/books/invalid/.gitkeep
+backend/data/db/
+
 # ---- Node / Angular (frontend) ----
 frontend/node_modules/
 frontend/dist/
