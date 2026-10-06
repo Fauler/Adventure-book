@@ -123,7 +123,9 @@ public class BookFileAdapter {
         writeValid(filename, rawJson);
         String finalId = stem(filename);
         log.info("Book registered via API: id={}", finalId);
-        return new Book(finalId, parsed.title(), parsed.author(), parsed.difficulty(), parsed.sections());
+        return new Book(finalId, parsed.title(), parsed.author(), parsed.difficulty(), parsed.sections(),
+                parsed.type(), parsed.estimatedDuration(), parsed.chapterCount(), parsed.tags(),
+                parsed.description());
     }
 
     private void processIncomingFile(Path file) {
@@ -174,7 +176,9 @@ public class BookFileAdapter {
 
     private Book parseContent(String bookId, String content) {
         Book parsed = jsonMapper.readValue(content, Book.class);
-        return new Book(bookId, parsed.title(), parsed.author(), parsed.difficulty(), parsed.sections());
+        return new Book(bookId, parsed.title(), parsed.author(), parsed.difficulty(), parsed.sections(),
+                parsed.type(), parsed.estimatedDuration(), parsed.chapterCount(), parsed.tags(),
+                parsed.description());
     }
 
     private void writeValid(String filename, String content) {

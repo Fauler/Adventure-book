@@ -94,16 +94,21 @@
 }
 
 .save-feedback {
+  display: block;
+  margin: -0.75rem 0 1rem;
   font-size: 0.85rem;
   font-weight: 600;
+  text-align: right;
   color: var(--color-easy);
+  min-height: 1.2rem;
+  visibility: hidden;
+
+  &.visible {
+    visibility: visible;
+  }
 
   &.error {
     color: var(--color-hard);
-  }
-
-  &:empty {
-    display: none;
   }
 }
 
@@ -118,6 +123,17 @@
     margin: 0 0 0.75rem;
     font-style: italic;
     color: var(--color-medium);
+  }
+
+  .health-delta {
+    margin-left: 0.4rem;
+    font-style: normal;
+    font-weight: 700;
+    color: var(--color-hard);
+
+    &.gain {
+      color: var(--color-easy);
+    }
   }
 
   .text {

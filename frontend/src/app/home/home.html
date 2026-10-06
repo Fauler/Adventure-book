@@ -61,7 +61,32 @@
         <article class="card">
           <h3>{{ book.title }}</h3>
           <p class="author">by {{ book.author }}</p>
-          <span class="difficulty" [attr.data-difficulty]="book.difficulty">{{ book.difficulty }}</span>
+          @if (book.description) {
+            <p class="description">{{ book.description }}</p>
+          }
+          <div class="badges">
+            <span class="difficulty" [attr.data-difficulty]="book.difficulty">{{ book.difficulty }}</span>
+            @if (book.type) {
+              <span class="genre">{{ book.type }}</span>
+            }
+          </div>
+          @if (book.estimatedDuration || book.chapterCount) {
+            <div class="meta">
+              @if (book.estimatedDuration) {
+                <span class="duration">🕐 {{ book.estimatedDuration }}</span>
+              }
+              @if (book.chapterCount) {
+                <span class="chapter-count">📖 {{ book.chapterCount }} chapter{{ book.chapterCount === 1 ? '' : 's' }}</span>
+              }
+            </div>
+          }
+          @if (book.tags && book.tags.length > 0) {
+            <div class="tags">
+              @for (tag of book.tags; track tag) {
+                <span class="tag">{{ tag }}</span>
+              }
+            </div>
+          }
           <a class="begin" [routerLink]="['/books', book.id, 'play']">
             ⭐ Begin Quest
           </a>

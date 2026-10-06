@@ -35,13 +35,6 @@
       <div class="header-actions">
         <span class="health" [class.dead]="current.status === 'DEAD'">❤️ {{ current.health }} HP</span>
         @if (current.status === 'PLAYING') {
-          <span class="save-feedback" [class.error]="saveState() === 'error'">
-            @if (saveState() === 'saved') {
-              ✅ Saved!
-            } @else if (saveState() === 'error') {
-              ⚠️ Could not save. Please try again.
-            }
-          </span>
           <button type="button" class="save" [disabled]="saveState() === 'saving'" (click)="saveProgress()">
             💾 Save Progress
           </button>
@@ -49,6 +42,16 @@
         }
       </div>
     </header>
+
+    @if (current.status === 'PLAYING') {
+      <p class="save-feedback" [class.visible]="saveState() === 'saved' || saveState() === 'error'" [class.error]="saveState() === 'error'">
+        @if (saveState() === 'saved') {
+          ✅ Saved!
+        } @else if (saveState() === 'error') {
+          ⚠️ Could not save. Please try again.
+        }
+      </p>
+    }
 
     @if (confirmStop()) {
       <div class="modal-backdrop">
@@ -66,7 +69,14 @@
 
     <article class="section">
       @if (current.consequenceText) {
-        <p class="consequence">⚠️ {{ current.consequenceText }}</p>
+        <p class="consequence">
+          ⚠️ {{ current.consequenceText }}
+          @if (healthDelta() !== null && healthDelta() !== 0) {
+            <strong class="health-delta" [class.gain]="healthDelta()! > 0">
+              ({{ healthDelta()! > 0 ? '+' : '' }}{{ healthDelta() }} HP)
+            </strong>
+          }
+        </p>
       }
       <p class="text">{{ current.section.text }}</p>
 

@@ -8,15 +8,22 @@
 export type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
 /**
- * Response shape of `GET /api/books` list items. Deliberately omits `description`/
- * `tags` shown in the original mockup — the real book JSON only has `title`/`author`/
- * `difficulty` (see `docs/00-PARKING_LOT.md` #5), so the backend doesn't fabricate them.
+ * Response shape of `GET /api/books` list items. `type`/`estimatedDuration`/
+ * `chapterCount`/`tags`/`description` are optional, author-provided display metadata —
+ * real fields in the book JSON (see `docs/00-PARKING_LOT.md` #5), `null`/empty when
+ * the book's own JSON leaves them blank/absent (true for every bundled sample book
+ * today).
  */
 export interface BookSummary {
   id: string;
   title: string;
   author: string;
   difficulty: Difficulty;
+  type: string | null;
+  estimatedDuration: string | null;
+  chapterCount: number | null;
+  tags: string[];
+  description: string | null;
 }
 
 /** Mirrors the backend's `GameStatus` enum (Objective 2/US-05). */
@@ -56,6 +63,11 @@ export interface BookDetail {
   author: string;
   difficulty: Difficulty;
   sections: Section[];
+  type: string | null;
+  estimatedDuration: string | null;
+  chapterCount: number | null;
+  tags: string[];
+  description: string | null;
 }
 
 /**

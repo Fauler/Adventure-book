@@ -177,8 +177,21 @@
     font-size: 0.9rem;
   }
 
+  .description {
+    margin: 0;
+    color: var(--color-ink-soft);
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
   .difficulty {
-    align-self: flex-start;
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -200,6 +213,40 @@
       background: var(--color-hard-bg);
       color: var(--color-hard);
     }
+  }
+
+  .genre {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: var(--color-border);
+    color: var(--color-ink-soft);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    font-size: 0.8rem;
+    color: var(--color-ink-soft);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: var(--color-easy-bg);
+    color: var(--color-ink-soft);
   }
 
   .begin {

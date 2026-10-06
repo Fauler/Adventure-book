@@ -52,6 +52,57 @@ describe('Home', () => {
     expect(text).toContain('No adventures match your search.');
   });
 
+  it('shows a genre pill only when the book has a non-blank type', () => {
+    const req = httpMock.expectOne((r) => r.url === '/api/books');
+    req.flush([
+      {
+        id: 'crystal-caverns',
+        title: 'The Crystal Caverns',
+        author: 'Evelyn Stormrider',
+        difficulty: 'EASY',
+        type: 'Fantasy',
+      },
+      { id: 'pirates-jade-sea', title: 'Pirates of the Jade Sea', author: 'Marina Blackwood', difficulty: 'MEDIUM' },
+    ]);
+    fixture.detectChanges();
+
+    const genrePills = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.genre')).map((el) =>
+      el.textContent?.trim(),
+    );
+    expect(genrePills).toEqual(['Fantasy']);
+  });
+
+  it('shows description, duration, chapter count and tags only when provided', () => {
+    const req = httpMock.expectOne((r) => r.url === '/api/books');
+    req.flush([
+      {
+        id: 'crystal-caverns',
+        title: 'The Crystal Caverns',
+        author: 'Evelyn Stormrider',
+        difficulty: 'EASY',
+        description: 'Deep beneath the mountain lies a hidden kingdom.',
+        estimatedDuration: '45-60 min',
+        chapterCount: 12,
+        tags: ['Magic', 'Underground', 'Crystals'],
+      },
+      { id: 'pirates-jade-sea', title: 'Pirates of the Jade Sea', author: 'Marina Blackwood', difficulty: 'MEDIUM' },
+    ]);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const text = el.textContent ?? '';
+    expect(text).toContain('Deep beneath the mountain lies a hidden kingdom.');
+    expect(text).toContain('45-60 min');
+    expect(text).toContain('12 chapters');
+
+    const tagPills = Array.from(el.querySelectorAll('.tag')).map((e) => e.textContent?.trim());
+    expect(tagPills).toEqual(['Magic', 'Underground', 'Crystals']);
+
+    expect(el.querySelectorAll('.description').length).toBe(1);
+    expect(el.querySelectorAll('.meta').length).toBe(1);
+    expect(el.querySelectorAll('.tags').length).toBe(1);
+  });
+
   it('re-fetches with the selected difficulty when a filter pill is clicked', () => {
     httpMock.expectOne((r) => r.url === '/api/books').flush([]);
     fixture.detectChanges();

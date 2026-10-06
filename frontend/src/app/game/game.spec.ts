@@ -128,6 +128,57 @@ describe('Game', () => {
       const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
       expect(text).toContain('You cut yourself on a rusty nail.');
       expect(text).toContain('7 HP');
+      expect((fixture.nativeElement as HTMLElement).querySelector('.health-delta')?.textContent?.trim()).toBe(
+        '(-3 HP)',
+      );
+    });
+
+    it('shows a "+" prefixed HP delta when the consequence is a gain', () => {
+      httpMock.expectOne((r) => r.url === playUrl).flush({
+        section: { id: '1', text: 'Section one', options: [{ description: 'Drink the potion' }] },
+        health: 10,
+        status: 'PLAYING',
+        consequenceText: null,
+      });
+      fixture.detectChanges();
+
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.option')!.click();
+
+      const req = httpMock.expectOne((r) => r.url === playUrl);
+      req.flush({
+        section: { id: '2', text: 'You feel stronger.', options: [{ description: 'Continue' }] },
+        health: 15,
+        status: 'PLAYING',
+        consequenceText: 'The potion restores your strength.',
+      });
+      fixture.detectChanges();
+
+      const delta = (fixture.nativeElement as HTMLElement).querySelector('.health-delta');
+      expect(delta?.textContent?.trim()).toBe('(+5 HP)');
+      expect(delta?.classList.contains('gain')).toBe(true);
+    });
+
+    it('does not show an HP delta when a move has no consequence text', () => {
+      httpMock.expectOne((r) => r.url === playUrl).flush({
+        section: { id: '1', text: 'Section one', options: [{ description: 'Walk on' }] },
+        health: 10,
+        status: 'PLAYING',
+        consequenceText: null,
+      });
+      fixture.detectChanges();
+
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.option')!.click();
+
+      const req = httpMock.expectOne((r) => r.url === playUrl);
+      req.flush({
+        section: { id: '2', text: 'Nothing happens.', options: [{ description: 'Continue' }] },
+        health: 10,
+        status: 'PLAYING',
+        consequenceText: null,
+      });
+      fixture.detectChanges();
+
+      expect((fixture.nativeElement as HTMLElement).querySelector('.health-delta')).toBeNull();
     });
 
     it('shows a distinct "You died" screen on DEAD status (US-07)', () => {

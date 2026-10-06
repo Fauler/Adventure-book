@@ -143,6 +143,32 @@ real data (`title`/`author`/`difficulty`); no placeholder/fabricated text was ad
 avoid presenting invented content as if it were real per-book data. Still awaiting
 explicit sign-off before touching the `GET /api/books` contract.
 
+**Status update (06-10-2026)**: discovered the provided book JSON format actually *does*
+already carry one more real field beyond `title`/`author`/`difficulty` — a top-level
+`type` (free-text genre/category, e.g. intended for something like "Fantasy"/
+"Adventure") — it was being silently dropped by `@JsonIgnoreProperties(ignoreUnknown =
+true)` on `Book`. Every sample file leaves it blank (`""`) or omits it entirely, so
+nothing has ever displayed, but since this is real per-book data (not fabricated), it's
+now mapped end-to-end: `Book.type` (normalized blank/absent → `null`), exposed on both
+`BookSummaryResponse`/`BookDetailResponse` as `type: string | null`, and rendered on the
+frontend's book card as a genre pill next to the difficulty badge **only when present**
+— hidden entirely for every book shipped today, since they all have a blank/absent
+`type`.
+
+**Status update (06-10-2026, later same day)**: the remaining four fields
+(`estimatedDuration`, `chapterCount`, `tags`, `description`) were also added, following
+the exact same pattern as `type` — optional, author-provided display metadata on
+`Book` (normalized blank/absent → `null`, `tags` defaults to an empty list with
+blank/null entries filtered out), exposed on `BookSummaryResponse`/`BookDetailResponse`,
+and rendered on the frontend book card **only when present** (duration/chapter-count
+row, tag pills, description paragraph). `chapterCount` was kept author-provided (not
+derived from the section graph), matching `type`'s simplicity — deriving it remains a
+possible future improvement if it ever drifts from the real section count, but wasn't
+pursued here. None of these fields participate in validation or game rules. A fully
+populated sample file demonstrating all 5 fields together was added at
+`assessment-material/New-books/lost-kingdom-eldoria_v2.json`. The `GET /api/books`
+`tags` query parameter still has no filtering effect — that remains open.
+
 ---
 
 ## 6 - Show the player's current HP more consistently across the gameplay screen
@@ -347,3 +373,71 @@ Open question if revisited later: would a home-page "Continue" entry (e.g. a bad
 the book card, or a dedicated section) be a meaningful UX improvement beyond the
 "quality over quantity" ceiling intended for this exercise? Low priority — the modal
 flow already fully satisfies the documented business rule.
+
+---
+
+## 12 - What happens if a book's JSON has duplicate section ids? ✅ Resolved (06-10-2026)
+
+Raised: 06-10-2026 — Resolved: 06-10-2026
+
+Idea: the brief's 4 official validity rules don't explicitly say "every section `id`
+must be unique within a book." If a book file has two sections sharing the same `id`
+(e.g. two objects with `"id": "5"` in the `sections` array), what should happen?
+
+**Decision**: formalized as a new **Rule 5** in `Book.validate()` — every section `id`
+must be unique within the book; a duplicate produces an explicit
+`"duplicate section id: X"` validation error (rejecting the whole file at ingestion,
+same mechanism as Rules 1-4), rather than silently keeping only one of the duplicates.
+`docs/05-business-architecture.md`, `docs/03-technical-architecture.md`, and
+`.github/instructions/backend.instructions.md` have been updated from "Rules 1-4"/
+"the 4 rules" to "Rules 1-5"/"the 5 rules" to match.
+
+---
+
+## 13 - Show the HP amount gained/lost alongside the consequence text
+
+Raised: 06-10-2026
+
+Context: the `DEAD`/`WON`/consequence banner (e.g. "⚠️ The destruction of the Crown
+consumes nearly all your remaining strength.") shows only the flavor text
+(`consequenceText`, entry #3), not the actual numeric HP delta that just applied (e.g.
+"-6 HP"). A player sees their HP drop (or the final "0 HP"/death screen) but has to
+infer the exact amount from the before/after header value rather than being told
+directly in the message itself.
+
+Open questions to resolve later:
+- Does `PlayResponse` need a new field (e.g. `consequenceValue`/`healthDelta`, signed
+  int) alongside `consequenceText`, or can the frontend already derive it locally from
+  "health before this move" minus "health after" (it already holds both, per the
+  stateless `/play` contract) without a new backend field?
+- If derived client-side: is that "computing business data" (forbidden — frontend
+  never duplicates backend logic) or just "subtracting two numbers the backend already
+  gave it" (presentation-only, not a new rule)? Leaning the latter since HP clamping
+  logic itself still lives entirely server-side and isn't being reimplemented — only
+  needs a decision before implementing either way.
+- Where would it be shown — appended into the existing consequence banner text (e.g.
+  "...consumes nearly all your remaining strength. (-6 HP)"), or as a separate small
+  badge near the HP indicator?
+- Relates to entry #3 (how `consequence.text` is surfaced) and entry #6 (HP display
+  consistency across outcome screens) — same general area of the gameplay screen.
+
+**Status update (06-10-2026, resolved)**: implemented as a client-side derivation, no
+new backend field. In `Game.chooseOption()`, the frontend already holds "health before
+this move" (`current.health`, sent in the `/play` request) and receives "health after"
+in the response (`response.health`) — the delta is simply `response.health -
+healthBeforeMove`, computed only when the response carries a `consequenceText` (`null`
+otherwise, so no stray "(+0 HP)" shows on consequence-free moves). This is pure
+subtraction of two numbers the backend already returned; no HP clamping/business logic
+is reimplemented client-side, so it doesn't violate "frontend never duplicates backend
+logic". Rendered appended to the consequence banner, e.g. "⚠️ ...consumes nearly all
+your remaining strength. **(-6 HP)**" — colored red for a loss, green for a gain (CSS
+class `.gain`). `PlayResponse`/API contract unchanged. Covered by 3 new tests in
+`game.spec.ts` (loss, gain, and "no delta shown when there's no consequence").
+
+**Status update (06-10-2026, follow-up UI fix)**: while verifying this, found the
+unrelated "✅ Saved!" confirmation (US-09) was inline among the header's flex buttons,
+so its appearance/disappearance shifted the header (and the whole page below it) —
+fixed by moving it to its own reserved-height line below the header, always present
+with `visibility: hidden`/`visible` toggling (not conditional rendering), so layout
+never shifts whether or not the message is showing. See
+`docs/05-business-architecture.md`'s "Save / Resume behavior" section.

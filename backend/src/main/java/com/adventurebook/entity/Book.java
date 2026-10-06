@@ -14,13 +14,45 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * own JSON — it is assigned by the ingestion pipeline (the book file's slug, per
  * {@code docs/05-business-architecture.md}) once the file has been parsed.
  *
- * <p>{@link #validate()} is the single place the 4 book-validity rules (see
+ * <p>{@link #validate()} is the single place the 5 book-validity rules (see
  * {@code docs/05-business-architecture.md}) are implemented — the ingestion pipeline
  * and the add-a-book endpoint both call this method and never duplicate/relax the
  * rules themselves.
+ *
+ * <p>{@code type} is an optional, free-text genre/category (e.g. "Fantasy",
+ * "Adventure") authored in the book's own JSON — it's blank/absent in every sample
+ * file provided so far, so it's normalized to {@code null} (never a blank string) at
+ * construction time. It's purely display metadata: shown by the frontend when present,
+ * omitted entirely when {@code null}, and never used in any validation/game rule (see
+ * {@code docs/00-PARKING_LOT.md} entry 5).
+ *
+ * <p>{@code estimatedDuration} (e.g. "45-60 min"), {@code chapterCount} (e.g. 12),
+ * {@code tags} (e.g. ["Magic", "Underground", "Crystals"]), and {@code description}
+ * (a short blurb) are the same kind of optional, author-provided display metadata as
+ * {@code type} — all five map the mockup's book-card fields 1:1 onto new, optional
+ * book-JSON fields (see `docs/00-PARKING_LOT.md` entry 5): blank/absent normalizes to
+ * {@code null} (or an empty list for {@code tags}), shown by the frontend only when
+ * present, never used in any validation/game rule. {@code chapterCount} is
+ * author-provided, not derived from the section graph (see entry 5's still-open
+ * question on that).
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record Book(String id, String title, String author, Difficulty difficulty, List<Section> sections) {
+public record Book(String id, String title, String author, Difficulty difficulty, List<Section> sections,
+        String type, String estimatedDuration, Integer chapterCount, List<String> tags, String description) {
+
+    public Book(String id, String title, String author, Difficulty difficulty, List<Section> sections) {
+        this(id, title, author, difficulty, sections, null, null, null, null, null);
+    }
+
+    public Book {
+        type = (type == null || type.isBlank()) ? null : type.trim();
+        estimatedDuration = (estimatedDuration == null || estimatedDuration.isBlank())
+                ? null
+                : estimatedDuration.trim();
+        tags = (tags == null) ? List.of() : tags.stream().filter(t -> t != null && !t.isBlank()).map(String::trim)
+                .toList();
+        description = (description == null || description.isBlank()) ? null : description.trim();
+    }
 
     /** The player's HP at the start of a fresh game (Objective 2/US-05) — the brief
      * only defines this as the *starting* value, not a hard ceiling. */
@@ -47,8 +79,11 @@ public record Book(String id, String title, String author, Difficulty difficulty
         }
 
         Set<String> sectionIds = new HashSet<>();
+        Set<String> duplicateSectionIds = new HashSet<>();
         for (Section section : allSections) {
-            sectionIds.add(section.id());
+            if (!sectionIds.add(section.id()) && duplicateSectionIds.add(section.id())) {
+                errors.add("duplicate section id: " + section.id());
+            }
         }
         for (Section section : allSections) {
             List<Option> options = section.options() != null ? section.options() : List.of();

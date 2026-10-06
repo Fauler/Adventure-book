@@ -29,7 +29,7 @@ persistence concerns (DDD-lite), organized using the three classic ECB stereotyp
   Entities, with no business rules of their own (e.g. "load the book, ask the Entity to
   validate it, ask the Entity to resolve the move, hand the repository the result").
 - **Entity** — the domain model itself (`Book`, `Section`, `Option`, `Consequence`) and
-  the business rules that must always hold true regardless of caller: the 4 book-validity
+  the business rules that must always hold true regardless of caller: the 5 book-validity
   rules, applying a consequence, clamping HP, deciding win/death.
 
 ```mermaid
@@ -110,7 +110,7 @@ backend/
 ```
 
 Rationale: `entity` (domain model + validation/game rules) is pure and framework-free —
-easy to unit test exhaustively against the 4 invalidity rules and the sample files
+easy to unit test exhaustively against the 5 invalidity rules and the sample files
 (including the empty `dragon-quest.json` and the invalid `the-prisoner.json`).
 `control` depends on `entity` but has no HTTP/persistence code of its own, so game-move
 logic is testable without spinning up Spring MVC. `boundary` is the only layer allowed
@@ -124,8 +124,13 @@ Book
  ├─ title: String
  ├─ author: String
  ├─ difficulty: Difficulty (EASY | MEDIUM | HARD)
+ ├─ type: String | null              // optional genre/category, blank/absent → null
+ ├─ estimatedDuration: String | null // optional author-provided "45-60 min" style string, blank/absent → null
+ ├─ chapterCount: Integer | null     // optional author-provided count, NOT derived from the section graph
+ ├─ tags: List<String>               // optional, defaults to empty list; blank/null entries filtered out, survivors trimmed
+ ├─ description: String | null       // optional short blurb, blank/absent → null
  └─ sections: List<Section>
-      validate(): List<ValidationError>   // the 4 invalidity rules, returns ALL failures, not just the first
+      validate(): List<ValidationError>   // the 5 invalidity rules, returns ALL failures, not just the first
 
 Section
  ├─ id: String            // normalized to String at parse time — sample data mixes numeric (1) and string ("500") ids
@@ -148,7 +153,7 @@ SectionType = BEGIN | NODE | END
 ```
 
 Domain behavior lives on these classes, not in services, e.g.:
-- `Book.validate()` → runs all 4 rules, collects every failure (feeds the
+- `Book.validate()` → runs all 5 rules, collects every failure (feeds the
   `.errors.txt` content 1:1).
 - `Section.isEnding()` → `type == END`.
 - `Consequence.applyTo(int health)` → returns the clamped-at-0 new health.
@@ -165,7 +170,7 @@ pipeline."
 ```mermaid
 flowchart LR
     A[incoming/*.json] -->|pipeline run| B{Parse + validate}
-    B -->|parse error or<br/>fails any of the 4 rules| C[invalid/book-x.json<br/>+ book-x.errors.txt]
+    B -->|parse error or<br/>fails any of the 5 rules| C[invalid/book-x.json<br/>+ book-x.errors.txt]
     B -->|passes all checks| D[valid/book-x.json]
     D --> E[In-memory catalog<br/>rebuilt from valid/]
 ```
@@ -202,8 +207,8 @@ flowchart LR
 
 | Method | Route | Input | Output |
 |---|---|---|---|
-| `GET` | `/api/books` | query params: `search`, `difficulty`, `tags` (all optional) | Summarized list of **valid** books (id, title, author, difficulty, tags, description) |
-| `GET` | `/api/books/{id}` | — | Full detail of a valid book (all sections) — used to render the home → "book detail"/"begin quest" step |
+| `GET` | `/api/books` | query params: `search`, `difficulty`, `tags` (all optional) | Summarized list of **valid** books (id, title, author, difficulty, type, estimatedDuration, chapterCount, tags, description) — all 5 fields after `difficulty` are optional, author-provided display metadata, `null`/empty when the book's own JSON leaves them blank/absent (true for most sample books today); `tags` query param is accepted but not yet wired to actual filtering, see `docs/00-PARKING_LOT.md` #5 |
+| `GET` | `/api/books/{id}` | — | Full detail of a valid book (id, title, author, difficulty, type, estimatedDuration, chapterCount, tags, description, sections) — used to render the home → "book detail"/"begin quest" step |
 | `POST` | `/api/books/{id}/play` | `{ currentSectionId, optionIndex, health }` (omit `currentSectionId`/`optionIndex` to start a fresh game at `BEGIN`) | `{ section, health, status: PLAYING \| WON \| DEAD, consequenceText }` — the complete next view model (`consequenceText` is the just-applied option's `Consequence.text`, `null` if it had none — see `docs/00-PARKING_LOT.md` #3) |
 | `POST` | `/api/books` | Full book JSON | `201` if valid (added to `valid/`, now in the catalog) / `400` + every failed rule if invalid (added to `invalid/` + `.errors.txt`) |
 | `GET` | `/api/books/{id}/progress` | — | Saved progress `{ currentSectionId, health, updatedAt }` or `null` if none |
@@ -234,7 +239,7 @@ Two distinct, non-overlapping layers of "validation":
   always fail with `400` + field-level messages. They know nothing about books or game
   rules.
 - **Entity (domain rules)** — everything that requires knowledge of a specific book's
-  content: the 4 book-validity rules, "does `optionIndex` exist on this section",
+  content: the 5 book-validity rules, "does `optionIndex` exist on this section",
   "does the resulting `gotoId` exist", consequence application/HP clamping, win/death
   detection. These live on `Book`/`Section`/`Option`/`Consequence` and are enforced
   regardless of caller (REST today, anything else tomorrow) — violations become a

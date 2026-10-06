@@ -8,7 +8,7 @@ you're mid-implementation and hit the edge case for real.
 
 ---
 
-## Book validation (Rules 1-4)
+## Book validation (Rules 1-5)
 
 Lives in `Book.validate()` (Entity layer), used uniformly by `BookCatalogService`
 (Control layer) in exactly two places: **initial load** (the startup pipeline,
@@ -26,6 +26,10 @@ book at runtime). There is only one validator — no separate/looser rules for
    in the file, not only the ones reachable from `BEGIN`. (This is what makes
    `the-prisoner.json`'s orphaned section `666` invalid, even though a player could
    never actually reach it by playing.)
+5. Every section `id` must be unique within the book — a file with two sections sharing
+   the same `id` is rejected with an explicit "duplicate section id" error, rather than
+   silently keeping only one of them (added 06-10-2026, see
+   `docs/00-PARKING_LOT.md` #12 for the discussion that led to this rule).
 
 Books that fail validation are **excluded from the catalog** — logged with every
 failed rule, never crash the application. This applies identically whether the book is
@@ -77,7 +81,7 @@ to send the reader back to an earlier one.
 
 Because "every path from `BEGIN` eventually reaches an `END` (or a certain death)" is a
 general graph-reachability property — not a structural file-shape check like Rules
-1-4 — it is **not** added as a formal fifth validation rule (Rules 1-4 remain the
+1-5 — it is **not** added as a formal additional validation rule (Rules 1-5 remain the
 complete contract for what makes a book loadable). Instead, it's treated as an
 **authoring-quality check** applied to the books shipped with this project: a backend
 test walks each bundled book's graph and asserts that every reachable section has at
@@ -98,8 +102,10 @@ endpoint (`03-technical-architecture.md`):
 - Each book has a **single save slot** on the backend (`GET`/`PUT`/`DELETE
   /api/books/{id}/progress`) — saving again simply **overwrites** the previous save;
   there is no history of saves.
-- On opening the game screen for a book, the book detail is fetched and, **in
-  parallel**, the backend is asked whether a save exists for it. If one does, a
+- On opening the game screen for a book, the book detail is fetched **first**, then
+  the backend is asked whether a save exists for it (sequential, not parallel — the
+  save-exists check needs the book's sections to detect a stale/broken resume, see
+  `docs/00-PARKING_LOT.md` if this changes). If one does, a
   **"Resume your adventure?"** modal appears **before any section is shown**, offering
   **Continue** (jump straight to the saved section/health) or **Restart** (delete the
   save immediately and begin at `BEGIN` with full starting HP). If no save exists, the
@@ -107,6 +113,11 @@ endpoint (`03-technical-architecture.md`):
 - A **Save** button appears in the header next to **Stop** once a playthrough is
   underway (ties into US-08's "Stop" and the header requirements) — it stores the
   current section + health and shows a brief "Saved!" confirmation.
+  - The confirmation renders on its own reserved-height line directly below the
+    header (not inline among the header buttons) — the space for it is always present
+    while playing (hidden via `visibility`, not `display`/conditional rendering), so
+    the header and section content never shift position when the message appears or
+    disappears.
 - The save is **cleared automatically** the moment the game ends (`WON` or `DEAD`) — a
   finished playthrough has nothing left to "continue," so the next visit to that book
   always offers the fresh-playthrough flow again, never a resume-into-a-finished-game
@@ -117,6 +128,15 @@ endpoint (`03-technical-architecture.md`):
 Both "auto-clear on end" and "clear on restart" are explicit product decisions (not
 left as an implementation afterthought) and should be reflected as acceptance criteria
 when US-09/US-10 are implemented.
+
+### HP gained/lost display (`docs/00-PARKING_LOT.md` #13)
+
+Alongside the consequence banner's flavor text, the actual signed HP change for that
+move (e.g. "(-6 HP)"/"(+5 HP)") is now shown too — colored red for a loss, green for a
+gain. Computed entirely client-side as `health after the move - health before the
+move`, both values already present in the stateless `/play` response; no new backend
+field, no HP/clamping logic duplicated. Shown only when the move has a consequence
+(`null` on consequence-free moves, so nothing renders for a plain "(+0 HP)").
 
 ---
 
@@ -129,7 +149,7 @@ submit it via `POST /api/books`.
 - **The frontend does no business-rule validation of its own.** It only checks that
   the pasted/typed text is syntactically valid JSON (a fast, friendly "that's not valid
   JSON" message for typos, before even calling the backend). Every actual rule (has a
-  `BEGIN`, no dangling `gotoId`, etc. — Rules 1-4 above) is applied by the backend,
+  `BEGIN`, no dangling `gotoId`, etc. — Rules 1-5 above) is applied by the backend,
   identically to startup validation. The frontend simply displays whatever list of
   rejection reasons comes back, **one per line, verbatim** — it never invents its own
   wording for *why* a book was rejected (consistent with "backend is the source of
@@ -172,7 +192,7 @@ numbered file, per the paragraph above.
 
 | Section above | User story / doc |
 |---|---|
-| Book validation (Rules 1-4) | US-01 (`02-user-stories.md`), pipeline (`03-technical-architecture.md`) |
+| Book validation (Rules 1-5) | US-01 (`02-user-stories.md`), pipeline (`03-technical-architecture.md`) |
 | Game-end states (`WON`/`DEAD`) | US-07 |
 | Cyclic paths (authoring-quality check) | US-01 / US-05 (not a formal rule, a test-suite concern) |
 | Save/Resume behavior | US-09, US-10 |

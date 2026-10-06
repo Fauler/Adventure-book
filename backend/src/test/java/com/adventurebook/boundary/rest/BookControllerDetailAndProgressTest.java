@@ -70,6 +70,52 @@ class BookControllerDetailAndProgressTest {
                 .hasStatusOk()
                 .bodyJson()
                 .extractingPath("$.sections.length()").isEqualTo(2);
+
+        tester().get().uri("/api/books/test-book")
+                .exchange()
+                .assertThat()
+                .bodyJson()
+                .extractingPath("$.type").isEqualTo(null);
+    }
+
+    @Test
+    void getDetail_bookWithGenreType_includesItInResponse() {
+        Book bookWithType = new Book("test-book", "Title", "Author", Difficulty.EASY, List.of(
+                new Section("1", "begin", SectionType.BEGIN, List.of(new Option("go", "2", null))),
+                new Section("2", "end", SectionType.END, List.of())), "Fantasy", "45-60 min", 12,
+                List.of("Magic", "Underground"), "A short blurb");
+        when(bookCatalogService.findById("test-book")).thenReturn(Optional.of(bookWithType));
+
+        tester().get().uri("/api/books/test-book")
+                .exchange()
+                .assertThat()
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.type").isEqualTo("Fantasy");
+
+        tester().get().uri("/api/books/test-book")
+                .exchange()
+                .assertThat()
+                .bodyJson()
+                .extractingPath("$.estimatedDuration").isEqualTo("45-60 min");
+
+        tester().get().uri("/api/books/test-book")
+                .exchange()
+                .assertThat()
+                .bodyJson()
+                .extractingPath("$.chapterCount").isEqualTo(12);
+
+        tester().get().uri("/api/books/test-book")
+                .exchange()
+                .assertThat()
+                .bodyJson()
+                .extractingPath("$.tags").isEqualTo(List.of("Magic", "Underground"));
+
+        tester().get().uri("/api/books/test-book")
+                .exchange()
+                .assertThat()
+                .bodyJson()
+                .extractingPath("$.description").isEqualTo("A short blurb");
     }
 
     @Test

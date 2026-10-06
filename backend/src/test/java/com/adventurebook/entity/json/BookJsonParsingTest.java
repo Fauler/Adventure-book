@@ -102,4 +102,72 @@ class BookJsonParsingTest {
         assertThat(parsed.sections().get(0).type()).isNull();
         assertThat(parsed.sections().stream().noneMatch(s -> s.type() == SectionType.BEGIN)).isTrue();
     }
+
+    @Test
+    void blankOrAbsentBookLevelTypeNormalizesToNull() {
+        String blankType = """
+                {
+                  "title": "T", "author": "A", "difficulty": "EASY", "type": "",
+                  "sections": [{"id": 1, "text": "start", "type": "BEGIN"}]
+                }
+                """;
+        String absentType = """
+                {
+                  "title": "T", "author": "A", "difficulty": "EASY",
+                  "sections": [{"id": 1, "text": "start", "type": "BEGIN"}]
+                }
+                """;
+
+        assertThat(jsonMapper.readValue(blankType, Book.class).type()).isNull();
+        assertThat(jsonMapper.readValue(absentType, Book.class).type()).isNull();
+    }
+
+    @Test
+    void nonBlankBookLevelTypeIsPreservedAndTrimmed() {
+        String json = """
+                {
+                  "title": "T", "author": "A", "difficulty": "EASY", "type": "  Fantasy  ",
+                  "sections": [{"id": 1, "text": "start", "type": "BEGIN"}]
+                }
+                """;
+
+        assertThat(jsonMapper.readValue(json, Book.class).type()).isEqualTo("Fantasy");
+    }
+
+    @Test
+    void absentOptionalDisplayMetadataNormalizesToNullOrEmptyList() {
+        String json = """
+                {
+                  "title": "T", "author": "A", "difficulty": "EASY",
+                  "sections": [{"id": 1, "text": "start", "type": "BEGIN"}]
+                }
+                """;
+
+        Book book = jsonMapper.readValue(json, Book.class);
+
+        assertThat(book.estimatedDuration()).isNull();
+        assertThat(book.chapterCount()).isNull();
+        assertThat(book.tags()).isEmpty();
+        assertThat(book.description()).isNull();
+    }
+
+    @Test
+    void nonBlankOptionalDisplayMetadataIsPreservedAndTrimmed() {
+        String json = """
+                {
+                  "title": "T", "author": "A", "difficulty": "EASY",
+                  "estimatedDuration": " 45-60 min ", "chapterCount": 12,
+                  "tags": [" Magic ", "", "Underground", null],
+                  "description": " A short blurb ",
+                  "sections": [{"id": 1, "text": "start", "type": "BEGIN"}]
+                }
+                """;
+
+        Book book = jsonMapper.readValue(json, Book.class);
+
+        assertThat(book.estimatedDuration()).isEqualTo("45-60 min");
+        assertThat(book.chapterCount()).isEqualTo(12);
+        assertThat(book.tags()).containsExactly("Magic", "Underground");
+        assertThat(book.description()).isEqualTo("A short blurb");
+    }
 }

@@ -44,8 +44,9 @@ public class BookController {
      * against title/author) and/or an exact {@code difficulty}.
      *
      * <p>{@code tags} is accepted for forward-compatibility with the API contract
-     * table but currently has no effect: the real book JSON format has no tag data
-     * yet (see `docs/00-PARKING_LOT.md` entry 5).
+     * table but currently has no filtering effect: books now carry their own optional
+     * {@code tags} display metadata (see `docs/00-PARKING_LOT.md` entry 5), but
+     * filtering the catalog by tag has not been implemented yet.
      */
     @GetMapping
     public List<BookSummaryResponse> list(

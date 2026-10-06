@@ -27,7 +27,7 @@ Keep code in these packages, matching `docs/03-technical-architecture.md`:
   `ProgressService`, ...) orchestrating use cases. No business rule should be hidden in a
   controller or inlined in a repository.
 - `entity/` — the domain model (`Book`, `Section`, `Option`, `Consequence`) and **all**
-  domain rules, including the 4 book-validity rules. `Book.validate()` is the single place
+  domain rules, including the 5 book-validity rules. `Book.validate()` is the single place
   those rules are implemented and tested — do not duplicate rule checks elsewhere (e.g. in
   a controller or the file-ingestion adapter).
 - `common/` — cross-cutting concerns (`GlobalExceptionHandler`, shared constants).
@@ -40,6 +40,7 @@ Keep code in these packages, matching `docs/03-technical-architecture.md`:
    (e.g. `String`), since sample data mixes numeric and string ids.
 4. Every non-`END` section must have non-empty `options` — checked for **all** sections in
    the file, not just sections reachable from `BEGIN`.
+5. Every section `id` must be unique within the book.
 
 Only `Book.validate()` enforces these. The ingestion pipeline (`incoming/valid/invalid`
 folders) calls it and never re-implements or relaxes any rule.
@@ -49,7 +50,7 @@ folders) calls it and never re-implements or relaxes any rule.
 - **Boundary (Bean Validation)**: structural/shape checks on incoming DTOs (`@NotNull`,
   `@NotBlank`, `@Valid`, etc.) — "is this a well-formed request," not "is this a legal game
   state."
-- **Entity (domain rules)**: the 4 book-validity rules, HP clamping (never below 0; no
+- **Entity (domain rules)**: the 5 book-validity rules, HP clamping (never below 0; no
   hard-coded max — 10 is only the documented *starting* value), game-end state derivation
   (`WON`/`DEAD` only), and any other business rule belong in the domain model, not in
   controllers or Bean Validation annotations.

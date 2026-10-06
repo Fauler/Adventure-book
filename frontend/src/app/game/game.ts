@@ -31,6 +31,12 @@ export class Game implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal(false);
   protected readonly bookTitle = signal<string | null>(null);
+  /** Signed HP change applied by the last move (`response.health - health before the
+   * move`), shown next to the consequence banner (see `docs/00-PARKING_LOT.md` #13).
+   * Purely presentational — both numbers already come from the backend's `/play`
+   * response, nothing about HP/clamping is recomputed client-side. `null` before any
+   * move, and whenever there's no consequence text to pair it with. */
+  protected readonly healthDelta = signal<number | null>(null);
 
   /** Set once a save is detected on init; drives the "Resume your adventure?" modal
    * (US-10) — shown *before* any section is rendered. */
@@ -54,7 +60,9 @@ export class Game implements OnInit {
     this.error.set(false);
 
     // Per `docs/05-business-architecture.md`: on opening the game screen, the book
-    // detail is fetched and, in parallel, the backend is asked whether a save exists.
+    // detail is fetched first, then the backend is asked whether a save exists
+    // (sequential, not parallel — the save-exists check also needs `detail.sections`
+    // to detect a stale/broken resume, see `resumeBroken` below).
     this.booksApi.getDetail(this.bookId).subscribe({
       next: (detail) => {
         this.bookDetail = detail;
@@ -94,6 +102,7 @@ export class Game implements OnInit {
     this.pendingResume.set(null);
     this.state.set({ section, health: saved.health, status: 'PLAYING', consequenceText: null });
     this.lastSaved = { sectionId: saved.currentSectionId, health: saved.health };
+    this.healthDelta.set(null);
   }
 
   /** **Restart** (US-10): clears the save immediately, then begins fresh at BEGIN. */
@@ -111,6 +120,7 @@ export class Game implements OnInit {
     this.loading.set(true);
     this.error.set(false);
     this.lastSaved = null;
+    this.healthDelta.set(null);
     this.gameApi.play(this.bookId, {}).subscribe({
       next: (response) => {
         this.state.set(response);
@@ -130,6 +140,7 @@ export class Game implements OnInit {
     }
     this.loading.set(true);
     this.error.set(false);
+    const healthBeforeMove = current.health;
     this.gameApi
       .play(this.bookId, {
         currentSectionId: current.section.id,
@@ -139,6 +150,7 @@ export class Game implements OnInit {
       .subscribe({
         next: (response) => {
           this.state.set(response);
+          this.healthDelta.set(response.consequenceText ? response.health - healthBeforeMove : null);
           this.loading.set(false);
           if (response.status !== 'PLAYING') {
             // Auto-cleared server-side too; keeps the frontend's own tracking in sync.

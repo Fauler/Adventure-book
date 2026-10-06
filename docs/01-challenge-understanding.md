@@ -136,6 +136,36 @@ Notes:
   are implied by the spec text but not shown in samples — we may need to design a
   small, extensible set of consequence types.
 
+### Optional book display metadata (added later, see `docs/00-PARKING_LOT.md` #5)
+
+The mockup's book cards show more than the fields above — a genre/category, an
+estimated duration, a chapter count, theme tags, and a short description. These are
+real, optional, author-provided fields on the book JSON (not business/validation data),
+normalized to `null`/empty when blank or absent:
+
+```json
+{
+  "title": "string",
+  "author": "string",
+  "difficulty": "HARD | MEDIUM | EASY",
+  "type": "string | absent/blank",
+  "estimatedDuration": "string (e.g. \"45-60 min\") | absent/blank",
+  "chapterCount": "number | absent",
+  "tags": ["string", "..."],
+  "description": "string | absent/blank",
+  "sections": [ "..." ]
+}
+```
+
+Notes:
+- All 5 fields are optional and never participate in `Book.validate()`'s 5 invalidity
+  rules or any game logic — purely cosmetic display metadata.
+- `chapterCount` is author-provided, not derived from the section graph.
+- `tags` defaults to an empty list when absent; blank/null entries are filtered out.
+- `pirates-jade-sea.json` was the first sample to carry `type` (always blank today); a
+  fully populated example demonstrating all 5 fields together lives at
+  `assessment-material/New-books/lost-kingdom-eldoria_v2.json`.
+
 ## Repository plan
 
 - `backend/` — Spring Boot + Maven application

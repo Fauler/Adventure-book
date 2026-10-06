@@ -97,6 +97,27 @@ class BookValidationTest {
     }
 
     @Test
+    void rule5_duplicateSectionId_isInvalid() {
+        Book book = book(
+                section("1", SectionType.BEGIN, option("2")),
+                section("2", SectionType.END),
+                section("2", SectionType.END));
+
+        assertThat(book.validate()).contains("duplicate section id: 2");
+    }
+
+    @Test
+    void rule5_duplicateSectionId_isReportedOnlyOncePerIdEvenWithThreeOrMoreDuplicates() {
+        Book book = book(
+                section("1", SectionType.BEGIN, option("2")),
+                section("2", SectionType.END),
+                section("2", SectionType.END),
+                section("2", SectionType.END));
+
+        assertThat(book.validate()).containsOnlyOnce("duplicate section id: 2");
+    }
+
+    @Test
     void collectsAllFailedRulesAtOnce() {
         Book book = book(section("1", SectionType.NODE));
 
