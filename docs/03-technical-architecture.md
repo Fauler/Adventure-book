@@ -217,11 +217,11 @@ flowchart LR
 
 Notes:
 - `/play` is intentionally **stateless** per the "backend is the source of truth"
-  principle above: the client always sends back the *official* `currentSectionId` and
-  `health` it was last given, the server re-derives everything from the book's domain
-  rules (never trusts a client-invented section id or HP value as-is — it re-validates
-  that the chosen option actually exists on that section and that the resulting state
-  is consistent before returning it).
+  principle above: the client sends back the last state returned by the backend. The
+  backend validates the requested section and option and recalculates the next state
+  from the supplied previous health. In a production multi-user environment,
+  authoritative game state would be persisted server-side or protected by a signed
+  state token.
 - No separate "game session" resource exists — a play-through's state is just
   "whatever `/play` last returned," optionally durable via `/progress`. This keeps
   Objective 1-3 completely free of persistence.
