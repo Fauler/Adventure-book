@@ -30,7 +30,7 @@ orders the work already agreed in those docs.
 | M3 | Consequences, health, game end | Objective 3 | US-06, US-07, US-08 (phase 1: simple Stop) | ✅ Done |
 | M4 | Save & resume | Objective 4 (extra) | US-09, US-10, US-08 (phase 2: revisit Stop/Pause) | ✅ Done |
 | M5 | Add a new book | Objective 5 (extra) | US-11 | ✅ Done |
-| M6 | Production Readiness (delivery, API quality, save discard) | NFR-01, NFR-02; parking lot #14, #15, #16 | — | 🚧 To do |
+| M6 | Production Readiness (delivery, API quality, save discard) | NFR-01, NFR-02; parking lot #14, #15, #16 | — | ✅ Done |
 | M7 | Stretch: token-based security + JWT | NFR-03 → NFR-04 (Group D) | — | 🚧 To do |
 | M8 | Server-side game state | parking lot #19 | — | 🚧 To do (candidate) |
 | M9 | Multiplayer: per-player progress | parking lot #18 (+ #9) | — | 🚧 To do (candidate) |

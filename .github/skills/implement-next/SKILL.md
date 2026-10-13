@@ -17,7 +17,7 @@ at a time, strictly following the project's own documentation rather than improv
    - `docs/03-technical-architecture.md` for stack, ECB package layout, API contract,
      validation/logging conventions, frontend routes.
    - `docs/04-non-functional-requirements.md` for what's in/out of scope right now (e.g.
-     auth, Docker, DB-for-books are explicitly deferred).
+     JWT auth, server-side state and DB-for-books are deferred; Docker/OpenAPI shipped in M6).
    - `docs/05-business-architecture.md` for exact business-rule wording (validation rules,
      game-end states, save/resume, add-book flow, file naming).
    - `docs/00-PARKING_LOT.md` for already-known open questions that might affect this piece

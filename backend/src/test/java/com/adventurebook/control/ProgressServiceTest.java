@@ -3,6 +3,8 @@ package com.adventurebook.control;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -42,10 +44,43 @@ class ProgressServiceTest {
 
     @Test
     void find_delegatesToRepository() {
+        when(bookCatalogService.findById("test-book")).thenReturn(Optional.of(sampleBook()));
         SavedProgress saved = new SavedProgress("test-book", "1", 7, java.time.Instant.now());
         when(savedProgressRepository.findById("test-book")).thenReturn(Optional.of(saved));
 
         assertThat(progressService.find("test-book")).contains(saved);
+    }
+
+    @Test
+    void find_forRemovedBook_deletesOrphanAndThrows() {
+        when(bookCatalogService.findById("gone")).thenReturn(Optional.empty());
+        when(savedProgressRepository.existsById("gone")).thenReturn(true);
+
+        assertThatThrownBy(() -> progressService.find("gone")).isInstanceOf(BookNotFoundException.class);
+        verify(savedProgressRepository).deleteById("gone");
+    }
+
+    @Test
+    void purgeOrphans_deletesOnlySavesWhoseBookIsGone() {
+        when(savedProgressRepository.findAll()).thenReturn(List.of(
+                new SavedProgress("kept", "1", 5, java.time.Instant.now()),
+                new SavedProgress("gone", "1", 5, java.time.Instant.now())));
+        when(bookCatalogService.findById("kept")).thenReturn(Optional.of(sampleBook()));
+        when(bookCatalogService.findById("gone")).thenReturn(Optional.empty());
+
+        progressService.purgeOrphans();
+
+        verify(savedProgressRepository).deleteById("gone");
+        verify(savedProgressRepository, never()).deleteById("kept");
+    }
+
+    @Test
+    void delete_whenNothingSaved_isNoOp() {
+        when(savedProgressRepository.existsById("test-book")).thenReturn(false);
+
+        progressService.delete("test-book");
+
+        verify(savedProgressRepository, never()).deleteById("test-book");
     }
 
     @Test

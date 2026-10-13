@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.adventurebook.boundary.jpa.SavedProgressRepository;
 import com.adventurebook.common.BookNotFoundException;
 import com.adventurebook.common.DomainException;
+import com.adventurebook.common.ErrorCode;
 import com.adventurebook.entity.Book;
 import com.adventurebook.entity.SavedProgress;
 
@@ -28,10 +29,35 @@ public class ProgressService {
     private final SavedProgressRepository savedProgressRepository;
     private final BookCatalogService bookCatalogService;
 
-    /** Returns the single saved row for a book, or empty if nothing is saved. */
-    @Transactional(readOnly = true)
+    /**
+     * Returns the single saved row for a book, or empty if nothing is saved.
+     *
+     * @throws BookNotFoundException if the book no longer exists; any orphaned save row
+     *         for it is deleted on the way, so a stale save is never returned
+     */
+    @Transactional
     public Optional<SavedProgress> find(String bookId) {
+        if (bookCatalogService.findById(bookId).isEmpty()) {
+            delete(bookId);
+            throw new BookNotFoundException("no valid book found with id \"" + bookId + "\"");
+        }
         return savedProgressRepository.findById(bookId);
+    }
+
+    /**
+     * Deletes every save whose book is no longer in the catalog (e.g. the book file was
+     * removed while the app was stopped). Run once after the catalog is (re)built.
+     */
+    @Transactional
+    public void purgeOrphans() {
+        savedProgressRepository.findAll().stream()
+                .map(SavedProgress::bookId)
+                .filter(bookId -> bookCatalogService.findById(bookId).isEmpty())
+                .toList()
+                .forEach(bookId -> {
+                    savedProgressRepository.deleteById(bookId);
+                    log.info("Orphaned progress removed: bookId={}", bookId);
+                });
     }
 
     /**
@@ -49,10 +75,11 @@ public class ProgressService {
             throw new DomainException("currentSectionId is required to save progress");
         }
         book.findSection(currentSectionId)
-                .orElseThrow(() -> new DomainException(
+                .orElseThrow(() -> new DomainException(ErrorCode.INVALID_SECTION,
                         "section \"" + currentSectionId + "\" does not exist in book \"" + bookId + "\""));
         if (health <= 0) {
-            throw new DomainException("cannot save a game that has already ended (health <= 0)");
+            throw new DomainException(ErrorCode.GAME_ALREADY_FINISHED,
+                    "cannot save a game that has already ended (health <= 0)");
         }
 
         SavedProgress existing = savedProgressRepository.findById(bookId).orElse(null);

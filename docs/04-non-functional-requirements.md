@@ -48,7 +48,7 @@ installed on the reviewer's machine
 | **Docker (Dockerfile per service + docker-compose)** | Reproducible; matches how real teams ship Spring Boot + Angular; demonstrates ops maturity | Extra time cost; another thing that can break under time pressure; not required by the brief |
 | No containerization, just document local `mvn`/`npm` commands | Fastest; brief only asks for build/run instructions, not Docker | Reviewer needs matching local toolchain (Java 21, Node 26, Maven) installed correctly |
 
-**Decision: later / stretch, after Objectives 1-5 are solid.** The brief doesn't
+**Decision: later / stretch, after Objectives 1-5 are solid. ✅ Done in M6.1** (two services, `docker compose up --build`; see README). The brief doesn't
 require it, and a broken Dockerfile under time pressure is worse than a clean README
 with plain `mvn`/`npm` instructions. Revisit only once the core app works end-to-end
 and there's time left.

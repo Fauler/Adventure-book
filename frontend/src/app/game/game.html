@@ -5,7 +5,13 @@
     <div class="modal-backdrop">
       <div class="modal resume-modal">
         <h3>📖 Resume your adventure?</h3>
-        @if (resumeBroken()) {
+        @if (confirmDiscard()) {
+          <p>Discard this saved game? This can't be undone.</p>
+          <div class="modal-actions">
+            <button type="button" class="primary" (click)="discardSave()">🗑 Yes, discard</button>
+            <button type="button" class="tertiary" (click)="confirmDiscard.set(false)">Cancel</button>
+          </div>
+        } @else if (resumeBroken()) {
           <p class="status error">
             Your saved progress points to a section that no longer exists in this book
             (it may have changed since you last played). You can't continue from there —
@@ -13,6 +19,7 @@
           </p>
           <div class="modal-actions">
             <button type="button" class="primary" (click)="resumeRestart()">Restart</button>
+            <button type="button" class="tertiary" (click)="confirmDiscard.set(true)">🗑 Discard save</button>
           </div>
         } @else {
           <p>You have a saved game at section <strong>{{ saved.currentSectionId }}</strong> with
@@ -21,13 +28,19 @@
           <div class="modal-actions">
             <button type="button" class="primary" (click)="resumeContinue()">▶ Continue</button>
             <button type="button" class="secondary" (click)="resumeRestart()">↺ Restart</button>
+            <button type="button" class="tertiary" (click)="confirmDiscard.set(true)">🗑 Discard save</button>
           </div>
         }
       </div>
     </div>
   } @else if (error()) {
-    <p class="status error">Something went wrong. Please try again.</p>
-    <button type="button" class="retry" (click)="startGame()">Retry</button>
+    @if (bookMissing()) {
+      <p class="status error">This book no longer exists. Any saved progress for it has been removed.</p>
+      <a class="retry" href="/">Back to Library</a>
+    } @else {
+      <p class="status error">Something went wrong. Please try again.</p>
+      <button type="button" class="retry" (click)="startGame()">Retry</button>
+    }
   } @else if (state(); as current) {
     <header class="game-header">
       <a class="back" href="/" (click)="onBackClicked($event)">← Back to Library</a>

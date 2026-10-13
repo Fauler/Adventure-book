@@ -438,7 +438,7 @@ describe('Game', () => {
       expect(text).toContain('You wake up in a forest.');
     });
 
-    it('shows a clear error and only a Restart option when the saved section no longer exists in the book', () => {
+    it('shows a clear error and only Restart/Discard options when the saved section no longer exists in the book', () => {
       setUp();
       flushDetail();
       flushSave({ currentSectionId: 'ghost-section', health: 5, updatedAt: '2026-01-01T00:00:00Z' });
@@ -446,11 +446,65 @@ describe('Game', () => {
 
       const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
       expect(text).toContain('no longer exists');
-      expect((fixture.nativeElement as HTMLElement).querySelectorAll('.modal-actions button').length).toBe(1);
+      expect((fixture.nativeElement as HTMLElement).querySelectorAll('.modal-actions button').length).toBe(2);
+    });
+  });
+
+  describe('discarding a save', () => {
+    function openDiscardConfirmation(): void {
+      setUp();
+      flushDetail();
+      flushSave({ currentSectionId: '2', health: 7, updatedAt: '2026-01-01T00:00:00Z' });
+      fixture.detectChanges();
+      clickButton('Discard save');
+    }
+
+    function clickButton(label: string): void {
+      const buttons = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button'));
+      buttons.find((b) => b.textContent?.includes(label))!.click();
+      fixture.detectChanges();
+    }
+
+    it('asks for confirmation before deleting anything', () => {
+      openDiscardConfirmation();
+
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Discard this saved game?');
+      httpMock.expectNone((r) => r.method === 'DELETE');
+    });
+
+    it('cancelling keeps the save and goes back to the resume options', () => {
+      openDiscardConfirmation();
+      clickButton('Cancel');
+
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Resume your adventure?');
+      httpMock.expectNone((r) => r.method === 'DELETE');
+    });
+
+    it('confirming deletes the save and leaves for the library without starting a new game', () => {
+      openDiscardConfirmation();
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+      clickButton('Yes, discard');
+
+      httpMock.expectOne((r) => r.url === progressUrl && r.method === 'DELETE').flush(null);
+      expect(navigate).toHaveBeenCalledWith('/');
+      httpMock.expectNone(playUrl);
     });
   });
 
   describe('error handling', () => {
+    it('shows a specific message when the book no longer exists (BOOK_NOT_FOUND)', () => {
+      setUp();
+      httpMock.expectOne((r) => r.url === detailUrl).flush(
+        { status: 404, code: 'BOOK_NOT_FOUND', error: 'Book not found', messages: ['gone'] },
+        { status: 404, statusText: 'Not Found' },
+      );
+      fixture.detectChanges();
+
+      const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(text).toContain('This book no longer exists');
+      expect(text).not.toContain('Retry');
+    });
+
     it('shows an error state when the book detail fetch fails', () => {
       setUp();
       httpMock.expectOne((r) => r.url === detailUrl).flush('boom', { status: 500, statusText: 'Internal Server Error' });

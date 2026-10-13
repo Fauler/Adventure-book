@@ -74,6 +74,10 @@ folders) calls it and never re-implements or relaxes any rule.
 - Keep `/api/books/{id}/play` and related endpoints stateless as specified in
   `docs/03-technical-architecture.md` — no server-side "game session" resource; every call
   takes the current state and returns the next state.
+- Every rejected request returns the `ApiError` body with a stable `ErrorCode` (full table
+  in `docs/03-technical-architecture.md`, "Error contract"). New business failures get a
+  new `ErrorCode`, are raised as `DomainException(code, message)`, and need a controller-
+  level test in `ApiErrorContractTest`. Never leak stack traces or internals.
 - Don't invent new response fields without checking the API contract table in
   `docs/03-technical-architecture.md` first; if a frontend need isn't covered there, flag it
   (update the doc or add to the parking lot) rather than freelancing the contract.
@@ -82,7 +86,6 @@ folders) calls it and never re-implements or relaxes any rule.
 
 Token/JWT auth (M7), server-side game state (M8), multiplayer (M9) and server-side
 pagination (M10) are not started — see `docs/06-implementation-plan.md` and the parking
-lot (#17-#19) — don't implement them unless explicitly asked. Docker, OpenAPI, business
-error coverage and save discard are part of M6 and may be implemented when that
-milestone is picked up. If M8 is picked up, rewrite the "stateless `/play`" rule in this
-file and in `frontend.instructions.md` in the same change.
+lot (#17-#19) — don't implement them unless explicitly asked. If M8 is picked up, rewrite
+the "stateless `/play`" rule in this file and in `frontend.instructions.md` in the same
+change.

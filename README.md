@@ -22,6 +22,21 @@ with `docs/01-challenge-understanding.md`); the build sequencing plan is in
 - Maven 3.9+ (or use the bundled `./mvnw` wrapper)
 - Node.js 26+ and npm 11+
 
+## Run with Docker (one command)
+
+Requires Docker with Compose. From the repo root:
+
+```bash
+docker compose up --build
+```
+
+- App: http://localhost:4200 (nginx serves the Angular build and proxies `/api` to the backend)
+- API: http://localhost:8080 — Swagger UI: http://localhost:8080/swagger-ui/index.html
+- `backend/data/` is mounted as a volume, so the book catalog and saved games survive
+  restarts. Drop new book JSON files in `backend/data/books/incoming/` and restart, or
+  use the "Add book" screen.
+- Stop with `docker compose down`.
+
 ## Backend
 
 ```bash
@@ -30,6 +45,7 @@ cd backend
 ```
 
 - API: http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
 - Health check: http://localhost:8080/actuator/health
 - Book catalog flat files: `backend/data/books/{incoming,valid,invalid}` — JSON files
   dropped in `incoming/` are validated and sorted into `valid/`/`invalid/`
@@ -73,6 +89,43 @@ Build a production bundle:
 cd frontend
 npm run build
 ```
+
+## API errors
+
+Every error response has the same body, `{ timestamp, status, code, error, messages[] }`,
+where `code` is a stable identifier (e.g. `BOOK_NOT_FOUND`, `INVALID_OPTION`,
+`GAME_ALREADY_FINISHED`). The full table is in `docs/03-technical-architecture.md`.
+
+## AI usage
+
+The brief allows AI-assisted development provided it is documented. This is how it was
+used here.
+
+**Tool**: GitHub Copilot CLI (Claude models), working inside this repository.
+
+**How it was steered** — rather than ad-hoc prompting, the decisions were written down
+first and the assistant was constrained by them:
+- `docs/` holds every business/technical decision, numbered in reading order, plus a
+  `00-PARKING_LOT.md` where open questions are recorded instead of being guessed.
+- `.github/copilot-instructions.md`, `.github/instructions/` (backend/frontend rules)
+  and `.github/skills/` (`implement-next`, `grill-me`) make the assistant read those docs,
+  follow the ECB layout, never run git, and keep the docs up to date.
+- Work was done milestone by milestone (`docs/06-implementation-plan.md`), stopping after
+  each one for review and a manual commit.
+
+**What the AI did**: read the brief and sample books and summarised the rules; drafted
+user stories, architecture and NFR documents; generated the Spring Boot and Angular
+code, unit tests and Docker setup for each milestone; ran the builds and tests.
+
+**What was decided or done manually**:
+- Interpreting the brief: the 4 sample books were treated as examples that must pass
+  through the same validation (so all 4 are rejected, and corrected `_FIXED` copies were
+  added); the extra validity rule for duplicate section ids; HP having no upper cap.
+- Architecture choices (DDD-lite + ECB, backend as source of truth, flat-file books,
+  file-based H2 for saves) and every parking-lot decision.
+- UI/UX review against the mockups, bug reports (stop-confirmation bypass, double
+  submit, layout shift on "Saved!") and the commits themselves.
+- Reviewing the generated code and docs before each commit.
 
 ## Project layout
 

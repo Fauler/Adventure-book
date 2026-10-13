@@ -211,9 +211,34 @@ flowchart LR
 | `GET` | `/api/books/{id}` | — | Full detail of a valid book (id, title, author, difficulty, type, estimatedDuration, chapterCount, tags, description, sections) — used to render the home → "book detail"/"begin quest" step |
 | `POST` | `/api/books/{id}/play` | `{ currentSectionId, optionIndex, health }` (omit `currentSectionId`/`optionIndex` to start a fresh game at `BEGIN`) | `{ section, health, status: PLAYING \| WON \| DEAD, consequenceText }` — the complete next view model (`consequenceText` is the just-applied option's `Consequence.text`, `null` if it had none — see `docs/00-PARKING_LOT.md` #3) |
 | `POST` | `/api/books` | Full book JSON | `201` if valid (added to `valid/`, now in the catalog) / `400` + every failed rule if invalid (added to `invalid/` + `.errors.txt`) |
-| `GET` | `/api/books/{id}/progress` | — | Saved progress `{ currentSectionId, health, updatedAt }` or `null` if none |
+| `GET` | `/api/books/{id}/progress` | — | Saved progress `{ currentSectionId, health, updatedAt }`, `204` if none, `404 BOOK_NOT_FOUND` if the book no longer exists (any orphaned save for it is deleted on the way) |
 | `PUT` | `/api/books/{id}/progress` | `{ currentSectionId, health }` | Confirmation (upserts the single saved row for that book) |
-| `DELETE` | `/api/books/{id}/progress` | — | Confirmation (used when a game ends — won/dead — to clear a stale save, and by an explicit "discard save") |
+| `DELETE` | `/api/books/{id}/progress` | — | `204`, idempotent — also `204` when nothing is saved or the book is gone (used when a game ends — won/dead — to clear a stale save, by Restart, and by the explicit "Discard save" action) |
+
+### Error contract
+
+Every error body is `{ timestamp, status, code, error, messages[] }`. Clients branch on
+the stable `code`, never on the message text. No stack trace or internal detail is ever
+returned (unexpected failures are a generic `500 INTERNAL_ERROR`, detail only in logs).
+
+| Status | `code` | When |
+|---|---|---|
+| 400 | `VALIDATION_FAILED` | Request body fails Bean Validation (field-level messages) |
+| 400 | `MALFORMED_REQUEST` | Body missing or not valid JSON |
+| 400 | `INVALID_PARAMETER` | Missing or mistyped query/path parameter (e.g. unknown `difficulty`) |
+| 400 | `INVALID_SECTION` | Section id (or an option's target) does not exist in the book |
+| 400 | `INVALID_OPTION` | Option index does not exist on the current section |
+| 400 | `GAME_ALREADY_FINISHED` | Move or save requested on an ended game (END section or HP <= 0) |
+| 400 | `INVALID_REQUEST` | Any other rejected domain rule (e.g. missing `currentSectionId` on save) |
+| 400 | `BOOK_VALIDATION_FAILED` | Submitted book breaks the validity rules (all reasons in `messages`) |
+| 404 | `BOOK_NOT_FOUND` | Unknown book id (also for `/progress` of a removed book) |
+| 404 | `ROUTE_NOT_FOUND` | No endpoint at this path |
+| 405 | `METHOD_NOT_ALLOWED` | HTTP method not supported for this endpoint |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | Content type not supported |
+| 500 | `INTERNAL_ERROR` | Unexpected failure |
+
+The API is browsable at `/swagger-ui/index.html` (springdoc-openapi; raw spec at
+`/v3/api-docs`).
 
 Notes:
 - `/play` is intentionally **stateless** per the "backend is the source of truth"
@@ -336,10 +361,11 @@ These are infrastructure/non-functional upgrades worth tracking but **not requir
 to satisfy Objectives 1-5 — only pick up if the core objectives (in order) are solid
 and time remains:
 
-- **Containerize the app (Docker)**: a `Dockerfile` per service (multi-stage Maven
+- **Containerize the app (Docker)** — ✅ done in M6.1: a `Dockerfile` per service (multi-stage Maven
   build for the backend; `ng build` + static server, e.g. Nginx, for the frontend) plus
   a `docker-compose.yml` wiring them together, with the H2 file DB and `data/books/`
-  mounted as a volume so data survives container restarts.
+  mounted as a volume so data survives container restarts. Two services only, exposed on
+  `8080` (backend) and `4200` (frontend, nginx proxying `/api` to the backend).
 - **Security: token-based auth**: introduce a minimal bearer-token flow (e.g. a single
   login endpoint issuing a JWT, validated by a Spring Security filter chain) ahead of
   the `/api/**` routes. This is also where a real "per-player" concept would enter —

@@ -444,7 +444,7 @@ never shifts whether or not the message is showing. See
 
 ---
 
-## 14 - Delivery and documentation hardening (M6 + OpenAPI + repo hygiene + README)
+## 14 - Delivery and documentation hardening (M6 + OpenAPI + repo hygiene + README) ✅ Resolved (M6.1)
 
 Raised: 13-10-2026
 
@@ -482,7 +482,7 @@ is medium.
 
 ---
 
-## 15 - API quality: complete business-level error coverage
+## 15 - API quality: complete business-level error coverage ✅ Resolved (M6.2)
 
 Raised: 13-10-2026
 
@@ -518,7 +518,7 @@ Each new error needs a test at the controller level.
 
 ---
 
-## 16 - Save feature: explicit "discard save" endpoint and UI
+## 16 - Save feature: explicit "discard save" endpoint and UI ✅ Resolved (M6.3)
 
 Raised: 13-10-2026
 
@@ -630,3 +630,26 @@ Open questions:
 
 Priority: highest of this group; it is the largest change and is a prerequisite for
 #18.
+
+
+---
+
+### Resolution notes for #14-#16 (M6, 13-10-2026)
+
+- **Docker**: two services (backend, frontend on nginx), exposed on two ports (`8080`,
+  `4200`); `backend/data` is bind-mounted so books and the H2 file survive restarts.
+  Verified with `docker compose up --build` (health, catalog, SPA route fallback).
+- **OpenAPI**: `springdoc-openapi-starter-webmvc-ui` 3.0.3, UI at `/swagger-ui/index.html`.
+- **Repo hygiene**: all `.DS_Store` files deleted from disk (already in `.gitignore`).
+- **Errors (#15)**: stable `code` added to `ApiError` (`ErrorCode` enum, full table in
+  `docs/03-technical-architecture.md`); framework errors (404/405/415/bad parameter) no
+  longer fall into the generic 500. Decision: `GET /progress` keeps `204` when nothing is
+  saved (the frontend relies on it to skip the resume modal), so no `PROGRESS_NOT_FOUND`
+  code exists. The correlation-id question is left to Micrometer tracing (trace ids are
+  already in the logs).
+- **Save (#16, closes #10)**: `DELETE /progress` is idempotent `204`. `GET /progress` of a
+  removed book is `404 BOOK_NOT_FOUND` and deletes the orphaned row; orphans are also
+  purged eagerly at startup after ingestion. The frontend resume modal has a confirmed
+  "Discard save" action (deletes and returns to the library), and the game screen shows
+  a specific "book no longer exists" message. The same-filename-different-content case
+  from #10 stays a conscious "no".
