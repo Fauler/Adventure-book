@@ -80,6 +80,9 @@ folders) calls it and never re-implements or relaxes any rule.
 
 ## Out of scope for now
 
-Docker containerization and token/JWT auth are backlog items (see
-`docs/03-technical-architecture.md` backlog and `docs/04-non-functional-requirements.md`
-NFR entries) — don't implement them unless explicitly asked to pick up that objective.
+Token/JWT auth (M7), server-side game state (M8), multiplayer (M9) and server-side
+pagination (M10) are not started — see `docs/06-implementation-plan.md` and the parking
+lot (#17-#19) — don't implement them unless explicitly asked. Docker, OpenAPI, business
+error coverage and save discard are part of M6 and may be implemented when that
+milestone is picked up. If M8 is picked up, rewrite the "stateless `/play`" rule in this
+file and in `frontend.instructions.md` in the same change.
