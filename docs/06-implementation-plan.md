@@ -18,7 +18,8 @@ orders the work already agreed in those docs.
 - If something ambiguous comes up mid-milestone, it goes to `docs/00-PARKING_LOT.md` with
   a stated interim assumption rather than silently guessing — then I continue.
 - Stretch items (Docker, security) stay **after** Objectives 1-5 regardless of how much
-  time is left, per NFR grouping in `docs/04-non-functional-requirements.md`.
+  time is left, per NFR grouping in `docs/04-non-functional-requirements.md`. Docker
+  shipped in M6; security is M7.
 
 ## Milestone map
 
@@ -205,19 +206,20 @@ Sub-packages, in this order (each is independently shippable):
   "AI usage" section (required by the brief: tools used, AI-assisted vs. manual parts).
 
 **M6.2 — API quality: business errors** (parking lot #15)
-- Add the missing business errors (invalid section/option, progress not found, game
-  already finished, framework-level 405/415/400/404 instead of a generic 500).
-- Add a stable machine-readable `code` to `ApiError` (decision pending in #15) and
-  adapt the frontend if the contract changes.
+- ✅ Added the missing business errors (invalid section/option, game already finished,
+  framework-level 405/415/400/404 instead of a generic 500). `GET /progress` keeps `204`
+  when nothing is saved, so there is no "progress not found" error.
+- ✅ Stable machine-readable `code` on `ApiError` (`ErrorCode` enum); frontend adapted.
 - A controller-level test per new error; no stack trace in any response body.
 
 **M6.3 — Save: discard and orphan cleanup** (parking lot #16, closes #10)
-- Explicit, documented discard endpoint (idempotency decided together with M6.2).
+- ✅ Discard endpoint: `DELETE /progress` is idempotent `204`.
 - Frontend: "Discard save" on the resume modal, with confirmation.
-- Cleanup (or rejection) of saves whose book was removed.
+- ✅ Saves of removed books are deleted (lazy on `GET /progress`, eager at startup).
 - Backend and frontend tests.
 
-Decisions to take before starting are listed under open questions in #14-#16.
+**Status: ✅ Done.** Decisions taken are recorded in the resolution notes of parking
+lot #14-#16 (stable `code`: yes; discard: idempotent `204`; Docker: two ports).
 
 **Stop here** → propose commit message after each sub-package, wait, then M7 (only if
 time/priority allows).

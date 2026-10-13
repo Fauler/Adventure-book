@@ -30,7 +30,11 @@ Keep code in these packages, matching `docs/03-technical-architecture.md`:
   domain rules, including the 5 book-validity rules. `Book.validate()` is the single place
   those rules are implemented and tested — do not duplicate rule checks elsewhere (e.g. in
   a controller or the file-ingestion adapter).
-- `common/` — cross-cutting concerns (`GlobalExceptionHandler`, shared constants).
+  The only accepted framework coupling inside `entity/` is the JPA mapping of
+  `SavedProgress` and the lenient Jackson deserializers in `entity/json/`; `entity/` may
+  throw `common` exceptions (`DomainException` + `ErrorCode`).
+- `common/` — cross-cutting concerns (`GlobalExceptionHandler`, `ApiError`, `ErrorCode`,
+  domain exceptions).
 
 ## Book validity rules (exact, see `docs/05-business-architecture.md`)
 
@@ -89,3 +93,7 @@ pagination (M10) are not started — see `docs/06-implementation-plan.md` and th
 lot (#17-#19) — don't implement them unless explicitly asked. If M8 is picked up, rewrite
 the "stateless `/play`" rule in this file and in `frontend.instructions.md` in the same
 change.
+
+**Docs sync**: any change under this path that affects behavior, API, structure or run
+instructions must update the related docs/README in the same task — follow the
+"Documentation sync checklist" in `.github/copilot-instructions.md`.

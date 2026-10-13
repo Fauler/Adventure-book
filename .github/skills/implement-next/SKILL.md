@@ -35,6 +35,7 @@ at a time, strictly following the project's own documentation rather than improv
 6. **Keep everything up to date.** Set the milestone's STATUS in
    `docs/06-implementation-plan.md`, update any doc or `.github/` instruction/skill that
    the change made stale (see "Keep instructions up to date" in
-   `.github/copilot-instructions.md`).
+   `.github/copilot-instructions.md`), following its "Documentation sync checklist"
+   (API contract, error codes, README, parking-lot status markers).
 7. **Report back concisely**: what milestone/story was implemented, which docs it followed,
    any parking-lot entries added, which docs/instructions were updated, and the next milestone.

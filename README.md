@@ -1,28 +1,30 @@
 # Adventure Book
 
-A choose-your-own-adventure game: play through branching story books, track HP,
-save/resume progress, and add new books at runtime.
+A choose-your-own-adventure game: browse story books, play through branching sections
+while tracking HP, save and resume progress, and add new books at runtime.
 
-This is a monolith with two independently buildable/runnable apps:
+## Table of contents
 
-- `backend/` — Spring Boot 4.1.1 (Java 21) REST API. Single source of truth for all
-  game rules (book validity, move resolution, HP, win/death). See
-  `.github/instructions/backend.instructions.md`.
-- `frontend/` — Angular 22 SPA. Pure "dumb" view: renders backend responses, forwards
-  user input, no business logic duplicated client-side. See
-  `.github/instructions/frontend.instructions.md`.
+- [Overview](#overview)
+- [Quick start (Docker)](#quick-start-docker)
+- [Local development](#local-development)
+- [Tests](#tests)
+- [API](#api)
+- [Book catalog](#book-catalog)
+- [Project layout](#project-layout)
+- [Documentation](#documentation)
+- [AI usage](#ai-usage)
 
-Full design decisions and rationale live in `docs/` (read in numbered order, starting
-with `docs/01-challenge-understanding.md`); the build sequencing plan is in
-`docs/06-implementation-plan.md`.
+## Overview
 
-## Prerequisites
+| App | Stack | Responsibility |
+|---|---|---|
+| `backend/` | Spring Boot 4.1.1, Java 21, H2 (file) | REST API. Single source of truth for every game rule: book validity, move resolution, HP, win/death, save/resume. |
+| `frontend/` | Angular 22, served by nginx in Docker | Thin view: renders backend responses and forwards user input. No business logic. |
 
-- Java 21
-- Maven 3.9+ (or use the bundled `./mvnw` wrapper)
-- Node.js 26+ and npm 11+
+Both apps build and run independently; Docker Compose runs them together.
 
-## Run with Docker (one command)
+## Quick start (Docker)
 
 Requires Docker with Compose. From the repo root:
 
@@ -30,71 +32,129 @@ Requires Docker with Compose. From the repo root:
 docker compose up --build
 ```
 
-- App: http://localhost:4200 (nginx serves the Angular build and proxies `/api` to the backend)
-- API: http://localhost:8080 — Swagger UI: http://localhost:8080/swagger-ui/index.html
-- `backend/data/` is mounted as a volume, so the book catalog and saved games survive
-  restarts. Drop new book JSON files in `backend/data/books/incoming/` and restart, or
-  use the "Add book" screen.
-- Stop with `docker compose down`.
+| Service | URL |
+|---|---|
+| App (nginx: Angular build + `/api` proxy) | http://localhost:4200 |
+| API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui/index.html |
+| Health check | http://localhost:8080/actuator/health |
 
-## Backend
+`backend/data/` is mounted as a volume, so the book catalog and saved games survive
+restarts. Images and nginx config live in `infrastructure/docker/`.
+
+Useful commands:
+
+```bash
+docker compose up --build -d      # start in the background
+docker compose ps                 # status and health of each service
+docker compose logs -f backend    # follow backend logs
+docker compose down               # stop and remove containers
+```
+
+## Local development
+
+**Prerequisites:** Java 21, Node.js 26+ with npm 11+. Maven is optional (the `./mvnw`
+wrapper is bundled).
+
+**Backend** (http://localhost:8080):
 
 ```bash
 cd backend
 ./mvnw spring-boot:run
 ```
 
-- API: http://localhost:8080
-- Swagger UI: http://localhost:8080/swagger-ui/index.html
-- Health check: http://localhost:8080/actuator/health
-- Book catalog flat files: `backend/data/books/{incoming,valid,invalid}` — JSON files
-  dropped in `incoming/` are validated and sorted into `valid/`/`invalid/`
-  (+ `<name>.errors.txt` on failure) on every startup. The repo ships with the sample
-  books already sorted and committed in `valid/`/`invalid/` (3 corrected/playable books
-  in `valid/`, the 4 originally-provided files + their error reports in `invalid/` —
-  see `backend/src/test/resources/sample-books/FIXES.md` for what was corrected and
-  why); `incoming/` starts empty and is only the drop zone for adding new books.
-- Saved-game data: file-based H2 database under `backend/data/db/` (gitignored,
-  recreated automatically).
-
-Run backend tests:
-
-```bash
-cd backend
-./mvnw test
-```
-
-## Frontend
+**Frontend** (http://localhost:4200) — start the backend first; `ng serve` proxies
+`/api/*` to `http://localhost:8080` (see `frontend/proxy.conf.json`):
 
 ```bash
 cd frontend
 npm install
-npm start   # ng serve
+npm start
 ```
 
-- App: http://localhost:4200
-- `ng serve` proxies `/api/*` to `http://localhost:8080` (see `frontend/proxy.conf.json`),
-  so start the backend first if you want the library page to show real data.
+Production bundle: `npm run build` (inside `frontend/`).
 
-Run frontend unit tests:
+## Tests
 
-```bash
-cd frontend
-npm test
+| Scope | Command |
+|---|---|
+| Backend | `cd backend && ./mvnw test` |
+| Frontend | `cd frontend && npm test` |
+
+## API
+
+### Documentation (Swagger / OpenAPI)
+
+Generated by `springdoc-openapi` from the controllers, so it never drifts from the code.
+Available whenever the backend is running (Docker or local):
+
+| What | URL |
+|---|---|
+| Swagger UI (browse and try every endpoint) | http://localhost:8080/swagger-ui/index.html |
+| OpenAPI spec (JSON, for client generators) | http://localhost:8080/v3/api-docs |
+
+Open Swagger on port `8080` directly; the frontend proxy only forwards `/api/*`.
+
+### Error contract
+
+Every error response has the same body:
+
+```json
+{ "timestamp": "...", "status": 400, "code": "INVALID_OPTION", "error": "Invalid request", "messages": ["..."] }
 ```
 
-Build a production bundle:
+Clients should branch on `code` (e.g. `BOOK_NOT_FOUND`, `INVALID_SECTION`,
+`GAME_ALREADY_FINISHED`), never on the message text. The full table is in
+[`docs/03-technical-architecture.md`](docs/03-technical-architecture.md).
 
-```bash
-cd frontend
-npm run build
+## Book catalog
+
+Books are flat JSON files under `backend/data/books/`:
+
+| Folder | Purpose |
+|---|---|
+| `incoming/` | Drop zone for new books (starts empty). |
+| `valid/` | Books that passed validation; these are playable. |
+| `invalid/` | Rejected books, each with a `<name>.errors.txt` listing every reason. |
+
+On every startup, files in `incoming/` are validated and moved to `valid/` or
+`invalid/`. Books can also be added at runtime via the **+ Add a new book** link on the
+home page.
+
+The repository ships the four provided sample books already sorted: the 4 originals
+are in `invalid/` (they break the validity rules), and 3 corrected `_FIXED` copies are
+in `valid/`. What was corrected and why is in
+`backend/src/test/resources/sample-books/FIXES.md`.
+
+Saved games live in a file-based H2 database under `backend/data/db/` (gitignored,
+recreated automatically).
+
+## Project layout
+
+```
+backend/                 Spring Boot API (ECB packages: boundary / control / entity / common)
+  data/books/            Flat-file book catalog (incoming / valid / invalid)
+  data/db/               H2 saved-game database (gitignored)
+frontend/                Angular SPA (home / game / add-book / shared / core)
+docs/                    Architecture and business decisions (source of truth)
+.github/                 Copilot instructions and skills for this repository
+infrastructure/docker/   Dockerfiles (backend, frontend) and the nginx config
+docker-compose.yml       Runs backend + frontend (nginx) together
 ```
 
-## API errors
+## Documentation
 
-Every error response has the same body, `{ timestamp, status, code, error, messages[] }`,
-where `code` is a stable identifier (e.g. `BOOK_NOT_FOUND`, `INVALID_OPTION`,
-`GAME_ALREADY_FINISHED`). The full table is in `docs/03-technical-architecture.md`.
+Design decisions and their rationale live in `docs/`; read them in numbered order.
+
+| Doc | Content |
+|---|---|
+| [`00-PARKING_LOT.md`](docs/00-PARKING_LOT.md) | Open questions and the decisions taken on each |
+| [`01-challenge-understanding.md`](docs/01-challenge-understanding.md) | Brief analysis and objectives |
+| [`02-user-stories.md`](docs/02-user-stories.md) | User stories with acceptance criteria |
+| [`03-technical-architecture.md`](docs/03-technical-architecture.md) | Stack, package layout, API contract, error codes |
+| [`04-non-functional-requirements.md`](docs/04-non-functional-requirements.md) | NFRs and their scope decisions |
+| [`05-business-architecture.md`](docs/05-business-architecture.md) | Business rules (validation, game end, save/resume) |
+| [`06-implementation-plan.md`](docs/06-implementation-plan.md) | Milestones and status |
 
 ## AI usage
 
@@ -126,12 +186,3 @@ code, unit tests and Docker setup for each milestone; ran the builds and tests.
 - UI/UX review against the mockups, bug reports (stop-confirmation bypass, double
   submit, layout shift on "Saved!") and the commits themselves.
 - Reviewing the generated code and docs before each commit.
-
-## Project layout
-
-```
-backend/            Spring Boot API (boundary/control/entity/common packages)
-frontend/            Angular SPA (home/game/shared/core)
-docs/                Architecture & business decisions (source of truth)
-.github/instructions/ Path-scoped implementation rules for backend/** and frontend/**
-```

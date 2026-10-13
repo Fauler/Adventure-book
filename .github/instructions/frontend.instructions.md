@@ -49,3 +49,7 @@ of guessing.
 
 - Surface backend validation/rejection messages verbatim (e.g. add-book rejection reasons,
   one per line) — never invent or reword backend error text.
+
+**Docs sync**: any change under this path that affects behavior, API, structure or run
+instructions must update the related docs/README in the same task — follow the
+"Documentation sync checklist" in `.github/copilot-instructions.md`.

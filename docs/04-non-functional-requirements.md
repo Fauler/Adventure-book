@@ -149,10 +149,9 @@ content.
 |---|---|---|
 | **A — Do now (foundational)** | NFR-01 (exception handling) | Cheap now, expensive later; directly supports Objective 1-3 API quality |
 | **B — Confirmed architectural decisions (no build work, just locked in)** | NFR-05 (monolith), NFR-06 (flat-file books) | Not tasks to schedule — decisions already made and documented; revisit trigger is explicit (real scale need), not "later in this project" |
-| **C — Stretch, after Objectives 1-5** | NFR-02 (Docker) | Pure infra polish, no functional risk if skipped, same bucket as `03-technical-architecture.md`'s existing backlog |
+| **C — Stretch, after Objectives 1-5** (✅ done in M6) | NFR-02 (Docker) | Pure infra polish, no functional risk if skipped, same bucket as `03-technical-architecture.md`'s existing backlog |
 | **D — Stretch, security, lowest priority, sequential dependency** | NFR-03 (token gate) → NFR-04 (JWT) | NFR-04 only makes sense after NFR-03, and both only matter if multi-user/production-exposure becomes a real goal — neither is implied by the brief's objectives |
 
 Next step once you're ready: fold **Group A** into the actual Objective 1 implementation
-work, and place **Groups C/D** at the end of the sequencing plan, after Objectives 1-5 —
-exact order within C/D (Docker before or after security) still to be decided when we
-get there.
+work, and place **Groups C/D** at the end of the sequencing plan, after Objectives 1-5.
+Docker (C) shipped in M6; security (D) remains M7.

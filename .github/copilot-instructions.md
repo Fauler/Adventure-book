@@ -32,6 +32,26 @@ any of them stale, update them **in the same task**, without being asked:
   the instruction files false → fix the statement in the same change.
 - A new open question → `docs/00-PARKING_LOT.md` (in English, as documentation).
 
+### Documentation sync checklist (any code or config change)
+
+Documentation is part of the change, not a follow-up. Before finishing, update whatever
+the change touched:
+
+- API (endpoint, DTO, status code, `ErrorCode`) → API contract and "Error contract" in
+  `docs/03-technical-architecture.md`; Swagger annotations if relevant.
+- Package/class moves, new layers or dependencies → package tree and diagrams in
+  `docs/03-technical-architecture.md`, and the architecture rules in
+  `.github/instructions/*.md`.
+- Business rule or behavior (validation, HP, save/resume, add-book) →
+  `docs/05-business-architecture.md` and the affected user story in `docs/02-user-stories.md`.
+- Run/build/test commands, ports, Docker or env changes → `README.md` and the Docker
+  notes in `docs/03-technical-architecture.md`.
+- Parking-lot item resolved, decided or newly opened → its status marker in the
+  heading (`✅ Resolved`, `🟡 Partially resolved`, `🚧 Open`) plus a resolution note.
+- New or changed tests/tooling → keep the README "Tests" section accurate.
+- Remove or rewrite statements that became false (e.g. "later", "stretch", "not
+  implemented"), rather than only adding new text.
+
 Before finishing a task, check whether any file under `.github/` now contradicts the
 code or docs, and mention in the final report what was updated.
 

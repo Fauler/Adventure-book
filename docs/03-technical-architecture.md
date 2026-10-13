@@ -42,9 +42,9 @@ flowchart TB
 
     subgraph SpringBoot["Spring Boot (REST API)"]
         subgraph Boundary
-            RC[REST Controllers<br/>BookController / ProgressController]
+            RC[REST Controllers<br/>BookController<br/>books, play, progress]
             BL[BookFileAdapter<br/>reads/writes incoming, valid, invalid]
-            PR[ProgressRepository<br/>Spring Data JPA]
+            PR[SavedProgressRepository<br/>Spring Data JPA]
         end
 
         subgraph Control
@@ -101,16 +101,19 @@ backend/
     ├── main/java/com/adventurebook/
     │   ├── AdventureBookApplication.java
     │   ├── boundary/
-    │   │   ├── rest/           # BookController, ProgressController + request/response DTOs
-    │   │   └── file/           # BookFileAdapter (filesystem pipeline), ProgressRepository (JPA)
+    │   │   ├── rest/           # BookController (books, play, progress), OpenApiConfig, request/response DTOs
+    │   │   ├── file/           # BookFileAdapter (filesystem pipeline), BookIngestionRunner (startup)
+    │   │   └── jpa/            # SavedProgressRepository (Spring Data JPA)
     │   ├── control/            # BookCatalogService, GameEngineService, ProgressService
-    │   ├── entity/             # Book, Section, Option, Consequence, Difficulty, SectionType + domain rules
-    │   └── common/             # GlobalExceptionHandler, shared error DTOs, logging config
+    │   ├── entity/             # Book, Section, Option, Consequence, SavedProgress (JPA) + domain rules; json/ = lenient parsing
+    │   └── common/             # GlobalExceptionHandler, ApiError, ErrorCode, domain exceptions
     └── test/java/com/adventurebook/...
 ```
 
-Rationale: `entity` (domain model + validation/game rules) is pure and framework-free —
-easy to unit test exhaustively against the 5 invalidity rules and the sample files
+Rationale: `entity` (domain model + validation/game rules) is free of web/filesystem
+concerns — the only framework coupling is the JPA mapping of `SavedProgress` and the
+Jackson deserializers in `entity/json` (a deliberate DDD-lite trade-off; it may use
+`common` exceptions) — and is easy to unit test exhaustively against the 5 invalidity rules and the sample files
 (including the empty `dragon-quest.json` and the invalid `the-prisoner.json`).
 `control` depends on `entity` but has no HTTP/persistence code of its own, so game-move
 logic is testable without spinning up Spring MVC. `boundary` is the only layer allowed
@@ -287,7 +290,7 @@ Rule of thumb used throughout: *"is this field shaped correctly?"* → Boundary.
 ## Observability (Spring Boot)
 
 - **Spring Boot Actuator** (`/actuator/health`, `/actuator/info`) enabled for a basic
-  liveness check — trivial to wire, useful once Docker is added (stretch task below).
+  liveness check — trivial to wire, used by the Docker Compose healthcheck.
 - **Micrometer Tracing** (`micrometer-tracing-bridge-otel`), console-only to start:
   adds `traceId`/`spanId` to the log pattern so every log line for a single request
   (controller → control → entity → repository) can be correlated, with zero external
@@ -361,7 +364,8 @@ These are infrastructure/non-functional upgrades worth tracking but **not requir
 to satisfy Objectives 1-5 — only pick up if the core objectives (in order) are solid
 and time remains:
 
-- **Containerize the app (Docker)** — ✅ done in M6.1: a `Dockerfile` per service (multi-stage Maven
+- **Containerize the app (Docker)** — ✅ done in M6.1: a `Dockerfile` per service under `infrastructure/docker/<service>/` (build context = repo
+  root; non-root runtime user (uid 1000) and JVM RAM-percentage flags; multi-stage Maven
   build for the backend; `ng build` + static server, e.g. Nginx, for the frontend) plus
   a `docker-compose.yml` wiring them together, with the H2 file DB and `data/books/`
   mounted as a volume so data survives container restarts. Two services only, exposed on
