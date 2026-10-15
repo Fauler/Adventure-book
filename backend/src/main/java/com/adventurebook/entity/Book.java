@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.adventurebook.common.DomainException;
+import com.adventurebook.common.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
@@ -148,22 +149,23 @@ public record Book(String id, String title, String author, Difficulty difficulty
      */
     public MoveResult resolveMove(String currentSectionId, int optionIndex, int health) {
         Section current = findSection(currentSectionId)
-                .orElseThrow(() -> new DomainException(
+                .orElseThrow(() -> new DomainException(ErrorCode.INVALID_SECTION,
                         "section \"" + currentSectionId + "\" does not exist in book \"" + id + "\""));
 
         if (current.isEnding() || health <= 0) {
-            throw new DomainException("the game has already ended; no further moves are possible");
+            throw new DomainException(ErrorCode.GAME_ALREADY_FINISHED,
+                    "the game has already ended; no further moves are possible");
         }
 
         List<Option> options = current.options() != null ? current.options() : List.of();
         if (optionIndex < 0 || optionIndex >= options.size()) {
-            throw new DomainException(
+            throw new DomainException(ErrorCode.INVALID_OPTION,
                     "option index " + optionIndex + " does not exist on section \"" + currentSectionId + "\"");
         }
 
         Option chosen = options.get(optionIndex);
         Section next = findSection(chosen.gotoId())
-                .orElseThrow(() -> new DomainException(
+                .orElseThrow(() -> new DomainException(ErrorCode.INVALID_SECTION,
                         "option \"" + chosen.description() + "\" points to a section that does not exist"));
 
         Consequence consequence = chosen.consequence();

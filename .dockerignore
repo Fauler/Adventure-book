@@ -1,0 +1,9 @@
+**/.DS_Store
+**/.git
+.idea
+docs
+backend/target
+backend/data
+frontend/node_modules
+frontend/dist
+frontend/.angular

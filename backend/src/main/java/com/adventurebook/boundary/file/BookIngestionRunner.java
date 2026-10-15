@@ -5,6 +5,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import com.adventurebook.control.BookCatalogService;
+import com.adventurebook.control.ProgressService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 public class BookIngestionRunner implements ApplicationRunner {
 
     private final BookCatalogService bookCatalogService;
+    private final ProgressService progressService;
 
     @Override
     public void run(ApplicationArguments args) {
         log.info("Running book ingestion pipeline on startup");
         bookCatalogService.ingestAndReload();
+        progressService.purgeOrphans();
     }
 }

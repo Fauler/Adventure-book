@@ -7,10 +7,12 @@ current scope.
 
 Each entry: what was raised, when, and open questions to resolve before acting on it.
 
+Status legend in each heading: ✅ Resolved / Decided, 🟡 Partially resolved, 🚧 Open. Entries
+without a marker are not used. Resolution notes sit at the end of each entry.
+
 ---
 
-## 1 - i18n-readiness of player-facing text
-
+## 1 - i18n-readiness of player-facing text 🚧 Open
 Raised: 05-10-2026
 
 Idea: Should `description` (and other player-facing text: section `text`, option
@@ -28,8 +30,7 @@ Open questions to resolve later:
 
 ---
 
-## 2 - Behavior when a request references an invalid/non-existent section
-
+## 2 - Behavior when a request references an invalid/non-existent section ✅ Resolved (M6.2)
 Raised: 05-10-2026
 
 Idea: What should happen if a client calls `/api/books/{id}/play` (or similar) with a
@@ -47,6 +48,10 @@ Open questions to resolve later:
 - Note: a book that passed validation (Rules 3+4) guarantees every *referenced* section
   exists, so this should only be reachable via a stale/forged client request, not
   normal play — still needs a defined, non-500 response per NFR-01.
+
+**Resolution (M6.2)**: `400` with the stable code `INVALID_SECTION` (and `INVALID_OPTION`
+for a bad option index); never a 500. Full error table in
+`docs/03-technical-architecture.md`.
 
 ---
 
@@ -84,8 +89,7 @@ mean "a consequence fired, with no text," so the `null`-vs-"happened" distinctio
 
 ---
 
-## 4 - Admin module / book registration UX (one-by-one vs. batch)
-
+## 4 - Admin module / book registration UX (one-by-one vs. batch) 🟡 Partially resolved (M5: single-book add; batch still open)
 Raised: 05-10-2026
 
 Context: US-11 ("Add a new book", `02-user-stories.md`) already documents a
@@ -111,8 +115,7 @@ Open questions to resolve later:
 
 ---
 
-## 5 - Mockup shows book metadata that doesn't exist in our JSON/API today
-
+## 5 - Mockup shows book metadata that doesn't exist in our JSON/API today ✅ Resolved (06-10-2026)
 Raised: 05-10-2026
 
 Context: the assessment mockup's book cards show a short description, an estimated
@@ -171,8 +174,7 @@ populated sample file demonstrating all 5 fields together was added at
 
 ---
 
-## 6 - Show the player's current HP more consistently across the gameplay screen
-
+## 6 - Show the player's current HP more consistently across the gameplay screen 🚧 Open (cosmetic)
 Raised: 05-10-2026
 
 Idea: today HP (e.g. "❤️ X HP") is shown in the header while actively playing
@@ -191,8 +193,7 @@ Open questions to resolve later:
 
 ---
 
-## 7 - How malformed/inconsistent book input (beyond the 4 official validity rules) is handled
-
+## 7 - How malformed/inconsistent book input (beyond the 4 official validity rules) is handled ✅ Resolved (M1, with interim assumption)
 Raised: 05-10-2026 (M1)
 
 The brief's 4 validity rules don't say anything about *technical* input inconsistencies
@@ -229,8 +230,7 @@ Open questions to resolve later (not blocking, interim assumption in place):
 
 ---
 
-## 8 - Mockup's per-section title and per-option "hint"/"Requires" tags don't exist in our data model
-
+## 8 - Mockup's per-section title and per-option "hint"/"Requires" tags don't exist in our data model 🚧 Open (deliberately dropped from the UI)
 Raised: 05-10-2026 (M3 UI pass)
 
 Context: the assessment mockup's game screen (`Figure 2`) shows a per-section title
@@ -255,8 +255,7 @@ Open questions to resolve later:
 
 ---
 
-## 9 - Multiple user logins: how should saved progress be partitioned per-player in the DB?
-
+## 9 - Multiple user logins: how should saved progress be partitioned per-player in the DB? 🚧 Open (see #18 / M9)
 Raised: 05-10-2026 (M4 — Save & resume)
 
 Context: `docs/05-business-architecture.md`'s "Save / Resume behavior" explicitly
@@ -286,7 +285,7 @@ Open questions to resolve later (once auth/NFR-03/NFR-04 are picked up):
 
 ---
 
-## 10 - Orphaned saved progress when a book is later removed; no explicit "discard save"; book-id stability
+## 10 - Orphaned saved progress when a book is later removed; no explicit "discard save"; book-id stability ✅ Resolved (M6.3, see #16)
 
 Raised: 05-10-2026 (M4 — Save & resume)
 
@@ -350,8 +349,7 @@ left in place, no cleanup job, no dedicated "forget save" UI):
 
 ---
 
-## 11 - Home-page "Continue" listing (US-10 AC1) — scoped out, documented deliberately
-
+## 11 - Home-page "Continue" listing (US-10 AC1) — scoped out, documented deliberately ✅ Decided (not implemented)
 Raised: 05-10-2026 (M4 — Save & resume, closing note)
 
 US-10's first acceptance criterion says: "Given I have one or more saved games, I can
@@ -394,8 +392,7 @@ same mechanism as Rules 1-4), rather than silently keeping only one of the dupli
 
 ---
 
-## 13 - Show the HP amount gained/lost alongside the consequence text
-
+## 13 - Show the HP amount gained/lost alongside the consequence text ✅ Resolved (06-10-2026)
 Raised: 06-10-2026
 
 Context: the `DEAD`/`WON`/consequence banner (e.g. "⚠️ The destruction of the Crown
@@ -441,3 +438,213 @@ fixed by moving it to its own reserved-height line below the header, always pres
 with `visibility: hidden`/`visible` toggling (not conditional rendering), so layout
 never shifts whether or not the message is showing. See
 `docs/05-business-architecture.md`'s "Save / Resume behavior" section.
+
+---
+
+## 14 - Delivery and documentation hardening (M6 + OpenAPI + repo hygiene + README) ✅ Resolved (M6.1)
+
+Raised: 13-10-2026
+
+Context: a comparison against another candidate implementation of the same brief
+(`rhribeiro25/Adventure-Library`) surfaced delivery/documentation items that are cheap
+and that an evaluator hits first. Grouped here as a single package of work.
+
+Items:
+- **Containerization (M6 / NFR-02)**: `docker compose up` must start the whole app.
+  Two services only — backend (Spring Boot) and frontend (static build served by
+  nginx, proxying `/api` to the backend). No PostgreSQL/Redis: books stay as flat
+  files (NFR-06) and saves stay in file-based H2, so both `backend/data` and the H2
+  file need a mounted volume to survive container restarts.
+- **OpenAPI / Swagger UI**: add `springdoc-openapi` so the REST API is browsable and
+  testable at `/swagger-ui/index.html`. Document request/response models and the
+  `ApiError` shape (see entry #15).
+- **Repo hygiene**: `.DS_Store` files exist across the tree (`backend/`, `.github/`,
+  `backend/data/`, ...). `.gitignore` already lists them; the existing files must be
+  deleted from disk and confirmed absent from the index (the user performs any git
+  action manually).
+- **README sanity check**: verify from a clean clone that the documented steps work
+  as written (`./mvnw spring-boot:run`, `npm install && npm start`). Add:
+  - a "How to run" section for Docker (`docker compose up --build`, ports, volumes);
+  - an "AI usage" section, **required by the brief**: which tools were used, which
+    parts were AI-assisted vs. implemented/decided manually, and how the
+    `docs/` + `.github/instructions` setup was used to steer the assistant.
+    Documentation of real usage, not a transcript of prompts.
+
+Open questions:
+- Frontend container: nginx static build vs. `ng serve`? (Leaning nginx.)
+- Single exposed port (nginx proxy) or two (4200 + 8080)?
+
+Priority: high for the README AI-usage section (explicit brief requirement); the rest
+is medium.
+
+---
+
+## 15 - API quality: complete business-level error coverage ✅ Resolved (M6.2)
+
+Raised: 13-10-2026
+
+Context: `GlobalExceptionHandler` currently maps shape validation (400), unreadable
+body (400), `DomainException` (400), `BookValidationException` (400),
+`BookNotFoundException` (404) and a catch-all (500). A caller of the API still cannot
+tell several distinct business failures apart, and some framework-level errors fall
+through to the generic handler.
+
+Missing errors to add:
+- **Invalid/unknown section** referenced by `/play` or `/progress` (entry #2) —
+  dedicated 400/404 with a clear reason instead of a generic message.
+- **Invalid option**: option not belonging to the current section.
+- **Saved progress not found** (`GET /progress` / `DELETE /progress` when none
+  exists) with an explicit, consistent response contract.
+- **Saved progress for a removed book** (entry #10) — 404 for the book, not a stale
+  save.
+- **Game already finished** (play requested from an `END`/`DEAD` state).
+- **Framework-level errors** currently masked as 500: unsupported method (405),
+  unsupported media type (415), missing/mistyped parameter (400), unmatched route (404).
+- **Stable machine-readable error code** in `ApiError` (e.g. `BOOK_NOT_FOUND`,
+  `INVALID_SECTION`, `INVALID_OPTION`, `PROGRESS_NOT_FOUND`) so clients do not parse
+  message text; keep human-readable messages alongside.
+- Guarantee that no stack trace or internal detail reaches the response body.
+
+Open questions:
+- Add `code` to `ApiError` (contract change; the frontend must be adapted) or keep the
+  contract and only fix status codes?
+- Is the 500 catch-all enough for unexpected failures, or should it carry a
+  correlation id that is also logged?
+
+Each new error needs a test at the controller level.
+
+---
+
+## 16 - Save feature: explicit "discard save" endpoint and UI ✅ Resolved (M6.3)
+
+Raised: 13-10-2026
+
+Context: closes the gap described in entry #10. `DELETE /api/books/{id}/progress`
+already exists, but today it is only triggered indirectly (Restart, or auto-clear on
+`WON`/`DEAD`). There is no way to discard a save without starting a new playthrough,
+and saves for books that no longer exist are never cleaned up.
+
+Scope:
+- Make the discard operation an explicit, documented endpoint with a defined contract:
+  `204` on success; behavior when no save exists (idempotent `204` vs. `404` — to be
+  decided together with entry #15).
+- Frontend: a "Discard save" action on the "Resume your adventure?" modal, separate
+  from Restart, with a confirmation step because the action is destructive.
+- Orphan cleanup: when the catalog reload detects a removed book, delete its
+  `saved_progress` row (or reject access to it) so a stale save is never returned.
+- Tests: backend (endpoint + orphan cleanup) and frontend (modal action).
+
+Out of scope: home-page saved-games list (entry #11) and per-player partitioning of
+saves (entry #9).
+
+Open questions:
+- Idempotent `204` or `404` when nothing is saved?
+- Should orphan cleanup happen eagerly at reload or lazily on access?
+
+### Resolution notes for #14-#16 (M6, 13-10-2026)
+
+- **Docker**: two services (backend, frontend on nginx), exposed on two ports (`8080`,
+  `4200`); `backend/data` is bind-mounted so books and the H2 file survive restarts.
+  Verified with `docker compose up --build` (health, catalog, SPA route fallback).
+  Infrastructure files live in `infrastructure/docker/{backend,frontend}/` (Dockerfiles,
+  `nginx.conf`); images run as non-root (uid 1000, matching typical Linux hosts so the bind-mounted
+  `backend/data` stays writable; only verified on macOS) with JVM RAM-percentage flags.
+  Deliberately left out as unnecessary for two services: custom network, restart policy,
+  frontend healthcheck, remote-debug port.
+- **OpenAPI**: `springdoc-openapi-starter-webmvc-ui` 3.0.3, UI at `/swagger-ui/index.html`.
+- **Repo hygiene**: all `.DS_Store` files deleted from disk (already in `.gitignore`).
+- **Errors (#15)**: stable `code` added to `ApiError` (`ErrorCode` enum, full table in
+  `docs/03-technical-architecture.md`); framework errors (404/405/415/bad parameter) no
+  longer fall into the generic 500. Decision: `GET /progress` keeps `204` when nothing is
+  saved (the frontend relies on it to skip the resume modal), so no `PROGRESS_NOT_FOUND`
+  code exists. The correlation-id question is left to Micrometer tracing (trace ids are
+  already in the logs).
+- **Save (#16, closes #10)**: `DELETE /progress` is idempotent `204`. `GET /progress` of a
+  removed book is `404 BOOK_NOT_FOUND` and deletes the orphaned row; orphans are also
+  purged eagerly at startup after ingestion. The frontend resume modal has a confirmed
+  "Discard save" action (deletes and returns to the library), and the game screen shows
+  a specific "book no longer exists" message. The same-filename-different-content case
+  from #10 stays a conscious "no".
+
+---
+
+## 17 - Server-side book search: pagination, sorting and filters 🚧 Open (M10)
+Raised: 13-10-2026
+
+Context: `GET /api/books` returns the full list and the frontend filters it. That is
+enough for a handful of books, but it does not scale and puts search logic in the
+client, against the "backend is the source of truth" principle.
+
+Scope:
+- Query params on `GET /api/books`: free-text query, title, author, difficulty,
+  category/type, `page`, `size`, `sort`, `direction`.
+- Response wrapper with items plus paging metadata (page, size, total elements/pages).
+- Defaults and limits (e.g. `size` capped) and validation of `sort` against an
+  allow-list of fields.
+- Frontend: move filtering to the API and add a pager.
+
+Open questions:
+- Books live in memory (flat files, NFR-06), so this is in-memory filtering and slicing
+  with no database benefit; is the contract change worth it at the current volume?
+- Does the existing `type` field count as the "category"? Editable categories (add and
+  remove) would be a separate feature.
+
+Priority: low.
+
+---
+
+## 18 - Multiplayer: independent progress per player 🚧 Open (M9)
+Raised: 13-10-2026
+
+Context: the brief lists supporting multiple players, each with independent game
+progress, as an extra objective. Today there is no player identity and `SavedProgress`
+is keyed by `bookId` alone (see entry #9, which covers the save-partitioning part of
+this problem).
+
+Scope:
+- A `Player` concept (identity, name) and a per-player game record: player + book +
+  current section + HP + status.
+- All game and progress endpoints operate on the current player, resolved server-side
+  and never taken from a client-supplied body field.
+- Migration decision for existing single-slot saves (discard, or attach to a default
+  player).
+
+Open questions:
+- Identity mechanism: simple player registration/selection, or real auth (ties to
+  NFR-03/NFR-04, M7)? Real auth without players protects nothing, so this decision
+  comes first.
+- Relation to entry #19: per-player games are naturally stored server-side, so the two
+  should be designed together.
+
+---
+
+## 19 - Server-side game state (backend as the real source of truth) 🚧 Open (M8)
+Raised: 13-10-2026
+
+Context: `/play` is stateless — the client sends `{currentSectionId, optionIndex,
+health}` and the server trusts the `health` value. A client can therefore send any HP
+(error or cheating), and the `/progress` save also stores client-supplied values. The
+backend validates moves but does not own the state, so it is not fully the source of
+truth.
+
+Scope:
+- Persist an active game on the server: `POST` to start a game returns a `gameId`;
+  moves are `POST .../choices` with only the chosen option; the server loads the
+  current section and HP, applies the consequence, persists and returns the new state.
+- The client never sends `health` or `currentSectionId`.
+- Save, pause and resume become server operations on the game record (status such as
+  `PLAYING`/`PAUSED`/`WON`/`DEAD`), removing the client-built save payload.
+- Add optimistic locking (`@Version`) so concurrent requests on one game cannot
+  overwrite each other.
+- Update `docs/03-technical-architecture.md`, which currently documents the stateless
+  contract and the single-user trust assumption.
+
+Open questions:
+- Migration of the frontend (`game.ts`) and of the M4 save flow (modal, restart,
+  auto-clear on `WON`/`DEAD`) onto the game resource.
+- Abandoned games: expiry/cleanup policy for games never finished.
+- Keep a compatibility path for the existing `/play` and `/progress` endpoints, or
+  replace them outright?
+
+Priority: highest of this group; it is the largest change and is a prerequisite for
+#18.

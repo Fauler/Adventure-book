@@ -103,6 +103,8 @@ export interface PlayResponse {
 export interface ApiError {
   timestamp: string;
   status: number;
+  /** Stable machine-readable code (e.g. `BOOK_NOT_FOUND`); branch on this, not on messages. */
+  code: string;
   error: string;
   messages: string[];
 }

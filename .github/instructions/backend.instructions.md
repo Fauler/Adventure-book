@@ -30,7 +30,11 @@ Keep code in these packages, matching `docs/03-technical-architecture.md`:
   domain rules, including the 5 book-validity rules. `Book.validate()` is the single place
   those rules are implemented and tested — do not duplicate rule checks elsewhere (e.g. in
   a controller or the file-ingestion adapter).
-- `common/` — cross-cutting concerns (`GlobalExceptionHandler`, shared constants).
+  The only accepted framework coupling inside `entity/` is the JPA mapping of
+  `SavedProgress` and the lenient Jackson deserializers in `entity/json/`; `entity/` may
+  throw `common` exceptions (`DomainException` + `ErrorCode`).
+- `common/` — cross-cutting concerns (`GlobalExceptionHandler`, `ApiError`, `ErrorCode`,
+  domain exceptions).
 
 ## Book validity rules (exact, see `docs/05-business-architecture.md`)
 
@@ -74,12 +78,22 @@ folders) calls it and never re-implements or relaxes any rule.
 - Keep `/api/books/{id}/play` and related endpoints stateless as specified in
   `docs/03-technical-architecture.md` — no server-side "game session" resource; every call
   takes the current state and returns the next state.
+- Every rejected request returns the `ApiError` body with a stable `ErrorCode` (full table
+  in `docs/03-technical-architecture.md`, "Error contract"). New business failures get a
+  new `ErrorCode`, are raised as `DomainException(code, message)`, and need a controller-
+  level test in `ApiErrorContractTest`. Never leak stack traces or internals.
 - Don't invent new response fields without checking the API contract table in
   `docs/03-technical-architecture.md` first; if a frontend need isn't covered there, flag it
   (update the doc or add to the parking lot) rather than freelancing the contract.
 
 ## Out of scope for now
 
-Docker containerization and token/JWT auth are backlog items (see
-`docs/03-technical-architecture.md` backlog and `docs/04-non-functional-requirements.md`
-NFR entries) — don't implement them unless explicitly asked to pick up that objective.
+Token/JWT auth (M7), server-side game state (M8), multiplayer (M9) and server-side
+pagination (M10) are not started — see `docs/06-implementation-plan.md` and the parking
+lot (#17-#19) — don't implement them unless explicitly asked. If M8 is picked up, rewrite
+the "stateless `/play`" rule in this file and in `frontend.instructions.md` in the same
+change.
+
+**Docs sync**: any change under this path that affects behavior, API, structure or run
+instructions must update the related docs/README in the same task — follow the
+"Documentation sync checklist" in `.github/copilot-instructions.md`.

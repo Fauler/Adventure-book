@@ -8,6 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.adventurebook.common.DomainException;
+import com.adventurebook.common.ErrorCode;
 
 /**
  * Objective 2/US-05 ("play a game — basic interactions") + Objective 3/US-06
@@ -182,5 +183,24 @@ class BookGameTest {
         Book broken = book(section("1", SectionType.END));
 
         assertThatThrownBy(broken::startGame).isInstanceOf(DomainException.class);
+    }
+
+    @Test
+    void resolveMove_failures_carryStableErrorCodes() {
+        Book book = sampleBook();
+
+        assertThat(codeOf(() -> book.resolveMove("nope", 0, 10))).isEqualTo(ErrorCode.INVALID_SECTION);
+        assertThat(codeOf(() -> book.resolveMove("1", 99, 10))).isEqualTo(ErrorCode.INVALID_OPTION);
+        assertThat(codeOf(() -> book.resolveMove("3", 0, 10))).isEqualTo(ErrorCode.GAME_ALREADY_FINISHED);
+        assertThat(codeOf(() -> book.resolveMove("1", 0, 0))).isEqualTo(ErrorCode.GAME_ALREADY_FINISHED);
+    }
+
+    private static ErrorCode codeOf(Runnable action) {
+        try {
+            action.run();
+        } catch (DomainException ex) {
+            return ex.code();
+        }
+        throw new AssertionError("expected a DomainException");
     }
 }

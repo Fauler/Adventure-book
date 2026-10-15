@@ -8,15 +8,16 @@ at a time, strictly following the project's own documentation rather than improv
 
 ## Process
 
-1. **Find the next pending objective.** Check `docs/01-challenge-understanding.md` for the
-   ordered objectives (1 → 5) and `docs/02-user-stories.md` for the user stories backing
-   them. Objectives must be treated in order — don't start objective N+1 work while N is
-   incomplete, unless explicitly told otherwise.
+1. **Find the next pending milestone.** Open `docs/06-implementation-plan.md` and take
+   the first milestone whose STATUS is "To do" (candidates marked "candidate" only when
+   the user asks for them). Use `docs/01-challenge-understanding.md` (objectives 1 → 5,
+   in order) and `docs/02-user-stories.md` for the business context. Don't start
+   milestone N+1 while N is incomplete, unless explicitly told otherwise.
 2. **Cross-check the relevant docs before writing code**:
    - `docs/03-technical-architecture.md` for stack, ECB package layout, API contract,
      validation/logging conventions, frontend routes.
    - `docs/04-non-functional-requirements.md` for what's in/out of scope right now (e.g.
-     auth, Docker, DB-for-books are explicitly deferred).
+     JWT auth, server-side state and DB-for-books are deferred; Docker/OpenAPI shipped in M6).
    - `docs/05-business-architecture.md` for exact business-rule wording (validation rules,
      game-end states, save/resume, add-book flow, file naming).
    - `docs/00-PARKING_LOT.md` for already-known open questions that might affect this piece
@@ -31,5 +32,10 @@ at a time, strictly following the project's own documentation rather than improv
 5. **Never run any `git` command** (see `.github/copilot-instructions.md`) — leave staging
    and committing to the user. You may propose a commit message once a meaningful chunk of
    work is done, but never execute it.
-6. **Report back concisely**: what objective/story was implemented, which docs it followed,
-   any parking-lot entries added, and what the logical next objective would be.
+6. **Keep everything up to date.** Set the milestone's STATUS in
+   `docs/06-implementation-plan.md`, update any doc or `.github/` instruction/skill that
+   the change made stale (see "Keep instructions up to date" in
+   `.github/copilot-instructions.md`), following its "Documentation sync checklist"
+   (API contract, error codes, README, parking-lot status markers).
+7. **Report back concisely**: what milestone/story was implemented, which docs it followed,
+   any parking-lot entries added, which docs/instructions were updated, and the next milestone.

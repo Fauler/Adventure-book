@@ -18,7 +18,8 @@ orders the work already agreed in those docs.
 - If something ambiguous comes up mid-milestone, it goes to `docs/00-PARKING_LOT.md` with
   a stated interim assumption rather than silently guessing — then I continue.
 - Stretch items (Docker, security) stay **after** Objectives 1-5 regardless of how much
-  time is left, per NFR grouping in `docs/04-non-functional-requirements.md`.
+  time is left, per NFR grouping in `docs/04-non-functional-requirements.md`. Docker
+  shipped in M6; security is M7.
 
 ## Milestone map
 
@@ -30,8 +31,11 @@ orders the work already agreed in those docs.
 | M3 | Consequences, health, game end | Objective 3 | US-06, US-07, US-08 (phase 1: simple Stop) | ✅ Done |
 | M4 | Save & resume | Objective 4 (extra) | US-09, US-10, US-08 (phase 2: revisit Stop/Pause) | ✅ Done |
 | M5 | Add a new book | Objective 5 (extra) | US-11 | ✅ Done |
-| M6 | Stretch: containerize app | NFR-02 (Group C) | — | 🚧 To do |
+| M6 | Production Readiness (delivery, API quality, save discard) | NFR-01, NFR-02; parking lot #14, #15, #16 | — | ✅ Done |
 | M7 | Stretch: token-based security + JWT | NFR-03 → NFR-04 (Group D) | — | 🚧 To do |
+| M8 | Server-side game state | parking lot #19 | — | 🚧 To do (candidate) |
+| M9 | Multiplayer: per-player progress | parking lot #18 (+ #9) | — | 🚧 To do (candidate) |
+| M10 | Server-side search: pagination, sorting, filters | parking lot #17 | — | 🚧 To do (candidate) |
 
 Update this column as each milestone is actually finished (not when it's merely planned
 below) — it's the at-a-glance source of truth for "where are we right now".
@@ -181,16 +185,44 @@ Frontend:
   verbatim, one per line.
 
 **Stop here** → propose commit message, wait, then decide whether to continue into
-stretch items (M6/M7) or stop, given time remaining.
+M6/M7 or stop, given time remaining.
 
 ---
 
-## M6 — Stretch: containerize the app (NFR-02)
+## M6 — Production Readiness (NFR-01, NFR-02; parking lot #14, #15, #16)
 
-Dockerfile(s) for backend and frontend (+ optionally `docker-compose.yml`), per the backlog
-entry in `docs/03-technical-architecture.md`. No functional changes to the app itself.
+**Goal**: the app is easy to run and evaluate, its API is documented and fails with
+clear business errors, and the save feature has no functional holes. No new gameplay.
 
-**Stop here** → propose commit message, wait, then M7 (only if time/priority allows).
+Sub-packages, in this order (each is independently shippable):
+
+**M6.1 — Delivery and documentation** (parking lot #14)
+- Docker: backend Dockerfile, frontend Dockerfile (static build served by nginx,
+  proxying `/api`), root `docker-compose.yml` with two services and volumes for
+  `backend/data` and the H2 file. No PostgreSQL/Redis (NFR-06).
+- OpenAPI/Swagger UI via `springdoc-openapi`, including the `ApiError` shape.
+- Delete the `.DS_Store` files from disk (`.gitignore` already covers them).
+- README: sanity check from a clean clone; add a Docker "How to run" section and an
+  "AI usage" section (required by the brief: tools used, AI-assisted vs. manual parts).
+
+**M6.2 — API quality: business errors** (parking lot #15)
+- ✅ Added the missing business errors (invalid section/option, game already finished,
+  framework-level 405/415/400/404 instead of a generic 500). `GET /progress` keeps `204`
+  when nothing is saved, so there is no "progress not found" error.
+- ✅ Stable machine-readable `code` on `ApiError` (`ErrorCode` enum); frontend adapted.
+- A controller-level test per new error; no stack trace in any response body.
+
+**M6.3 — Save: discard and orphan cleanup** (parking lot #16, closes #10)
+- ✅ Discard endpoint: `DELETE /progress` is idempotent `204`.
+- Frontend: "Discard save" on the resume modal, with confirmation.
+- ✅ Saves of removed books are deleted (lazy on `GET /progress`, eager at startup).
+- Backend and frontend tests.
+
+**Status: ✅ Done.** Decisions taken are recorded in the resolution notes of parking
+lot #14-#16 (stable `code`: yes; discard: idempotent `204`; Docker: two ports).
+
+**Stop here** → propose commit message after each sub-package, wait, then M7 (only if
+time/priority allows).
 
 ---
 
@@ -198,6 +230,48 @@ entry in `docs/03-technical-architecture.md`. No functional changes to the app i
 
 Token gate first (NFR-03), JWT real-identity auth after (NFR-04) — only pursued if there's
 still time after Objectives 1-5, per the Group D NFR decision.
+
+**Stop here** → propose commit message.
+
+---
+
+## M8 — Server-side game state (candidate; parking lot #19)
+
+**Goal**: the backend owns the game state, so the client cannot send or forge HP or
+position.
+
+- Persist active games (`gameId`, book, current section, HP, status); start-game and
+  choose-option endpoints take only the chosen option, never `health` or section id.
+- Save, pause and resume become operations on the game record (`PLAYING`/`PAUSED`/
+  `WON`/`DEAD`); `@Version` for optimistic locking.
+- Migrate the frontend game screen and the M4 save/resume flow; update
+  `docs/03-technical-architecture.md` (stateless contract and trust note).
+- Decide first: replace or keep the old `/play` and `/progress` endpoints.
+
+**Stop here** → propose commit message, wait.
+
+---
+
+## M9 — Multiplayer: per-player progress (candidate; parking lot #18, #9)
+
+**Goal**: each player has independent games and saves.
+
+- `Player` identity resolved server-side; games and saves scoped to the player.
+- Decision on identity mechanism (simple selection vs. real auth, linked to M7) and on
+  migrating existing single-slot saves.
+- Depends on M8.
+
+**Stop here** → propose commit message, wait.
+
+---
+
+## M10 — Server-side search: pagination, sorting, filters (candidate; parking lot #17)
+
+**Goal**: `GET /api/books` filters, sorts and pages on the server.
+
+- Query params, paged response wrapper, `size` cap, `sort` allow-list.
+- Frontend: use the API for filtering and add a pager.
+- Low priority; in-memory data gives no performance benefit.
 
 **Stop here** → propose commit message.
 

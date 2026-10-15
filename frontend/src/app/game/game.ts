@@ -1,9 +1,10 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { BooksApi } from '../core/books-api';
 import { GameApi } from '../core/game-api';
-import { BookDetail, PlayResponse, SavedProgress } from '../core/models';
+import { ApiError, BookDetail, PlayResponse, SavedProgress } from '../core/models';
 
 /**
  * Play screen (Objective 2/US-05, extended in M4 for US-08/09/10 save & resume).
@@ -30,6 +31,9 @@ export class Game implements OnInit {
   protected readonly state = signal<PlayResponse | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal(false);
+  /** True when the backend answered `BOOK_NOT_FOUND` — the book was removed, so retrying
+   * is pointless and a specific message is shown instead of the generic one. */
+  protected readonly bookMissing = signal(false);
   protected readonly bookTitle = signal<string | null>(null);
   /** Signed HP change applied by the last move (`response.health - health before the
    * move`), shown next to the consequence banner (see `docs/00-PARKING_LOT.md` #13).
@@ -53,6 +57,8 @@ export class Game implements OnInit {
   protected readonly saveState = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
   /** Shows the "unsaved progress" confirmation instead of immediately leaving. */
   protected readonly confirmStop = signal(false);
+  /** Shows the "discard saved game?" confirmation inside the resume modal. */
+  protected readonly confirmDiscard = signal(false);
 
   ngOnInit(): void {
     this.bookId = this.route.snapshot.paramMap.get('id') ?? '';
@@ -85,7 +91,8 @@ export class Game implements OnInit {
           },
         });
       },
-      error: () => {
+      error: (response: HttpErrorResponse) => {
+        this.bookMissing.set((response.error as ApiError | null)?.code === 'BOOK_NOT_FOUND');
         this.error.set(true);
         this.loading.set(false);
       },
@@ -113,6 +120,19 @@ export class Game implements OnInit {
     this.booksApi.deleteProgress(this.bookId).subscribe({
       next: () => this.startGame(),
       error: () => this.startGame(),
+    });
+  }
+
+  /** **Discard save**: deletes the save without starting a new game, then leaves for the
+   * library. Always goes through a confirmation because it is destructive. */
+  protected discardSave(): void {
+    this.booksApi.deleteProgress(this.bookId).subscribe({
+      next: () => this.leaveLibrary(),
+      error: () => {
+        this.confirmDiscard.set(false);
+        this.pendingResume.set(null);
+        this.error.set(true);
+      },
     });
   }
 
