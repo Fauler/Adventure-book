@@ -202,6 +202,10 @@ sequenceDiagram
   specified value and I'm shown the consequence text.
 - Given my HP reaches 0, the game ends in death (distinct from reaching a normal `END`
   section) — see US-07.
+- The HP amount shown next to the consequence text (e.g. "-3 HP") is returned by the
+  backend (`healthChange`) and always equals the option's consequence value, even when
+  it kills me with less HP left (1 HP + `LOSE_HEALTH 3` still shows "-3 HP"); the
+  frontend only displays it.
 - HP is visible at all times in the header while playing.
 - HP never goes below 0 (clamped at 0 on death). The brief only defines 10 as the
   *starting* value — it does not state a hard maximum, so healing/overflow behavior

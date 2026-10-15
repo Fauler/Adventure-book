@@ -154,6 +154,10 @@ submit it via `POST /api/books`.
   rejection reasons comes back, **one per line, verbatim** — it never invents its own
   wording for *why* a book was rejected (consistent with "backend is the source of
   truth" in `03-technical-architecture.md`).
+  Parse failures are also reported in plain language, never as raw Jackson messages: a
+  wrongly typed field is named by its path (e.g. `sections[0].options[0].consequence.value`),
+  anything else gets a generic "empty or not valid JSON" hint; the technical detail is
+  only logged server-side.
 - On success, the new book immediately appears in the library (same in-memory catalog,
   no restart needed — per the pipeline's on-demand re-ingestion in
   `03-technical-architecture.md`), and the screen offers "Add another" or "Go to

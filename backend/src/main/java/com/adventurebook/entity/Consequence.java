@@ -24,4 +24,12 @@ public record Consequence(
             case GAIN_HEALTH -> health + value;
         };
     }
+
+    /** The option's nominal signed HP effect (e.g. {@code -3}), independent of the player's current HP. */
+    public int signedValue() {
+        return switch (type) {
+            case LOSE_HEALTH -> -value;
+            case GAIN_HEALTH -> value;
+        };
+    }
 }

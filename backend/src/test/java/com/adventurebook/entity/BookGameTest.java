@@ -90,6 +90,7 @@ class BookGameTest {
         MoveResult result = book.resolveMove("1", 0, 10);
 
         assertThat(result.health()).isEqualTo(6);
+        assertThat(result.healthChange()).isEqualTo(-4);
         assertThat(result.status()).isEqualTo(GameStatus.PLAYING);
         assertThat(result.consequenceText()).isEqualTo("You scrape your shoulder.");
     }
@@ -105,6 +106,31 @@ class BookGameTest {
         MoveResult result = book.resolveMove("1", 0, 5);
 
         assertThat(result.health()).isEqualTo(8);
+        assertThat(result.healthChange()).isEqualTo(3);
+    }
+
+    @Test
+    void resolveMove_healthChangeIsNominalValue_evenWhenHpIsClamped() {
+        Book book = book(
+                section("1", SectionType.BEGIN,
+                        option("gather your thoughts", "2",
+                                new Consequence(ConsequenceType.LOSE_HEALTH, 3, "You're getting crazier..."))),
+                section("2", SectionType.NODE, option("go on", "1")));
+
+        assertThat(book.resolveMove("1", 0, 10).healthChange()).isEqualTo(-3);
+
+        MoveResult atOneHp = book.resolveMove("1", 0, 1);
+        assertThat(atOneHp.health()).isEqualTo(0);
+        assertThat(atOneHp.healthChange()).isEqualTo(-3);
+    }
+
+    @Test
+    void resolveMove_withoutConsequence_hasZeroHealthChange() {
+        Book book = book(
+                section("1", SectionType.BEGIN, option("go on", "2")),
+                section("2", SectionType.END));
+
+        assertThat(book.resolveMove("1", 0, 10).healthChange()).isZero();
     }
 
     @Test
@@ -118,6 +144,7 @@ class BookGameTest {
         MoveResult result = book.resolveMove("1", 0, 10);
 
         assertThat(result.health()).isEqualTo(0);
+        assertThat(result.healthChange()).isEqualTo(-20);
         assertThat(result.status()).isEqualTo(GameStatus.DEAD);
         assertThat(result.consequenceText()).isEqualTo("You fall to your doom.");
     }

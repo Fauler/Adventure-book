@@ -160,7 +160,7 @@ Domain behavior lives on these classes, not in services, e.g.:
   `.errors.txt` content 1:1).
 - `Section.isEnding()` → `type == END`.
 - `Consequence.applyTo(int health)` → returns the clamped-at-0 new health.
-- A small `MoveResult` value object (`section`, `health`, `status`, `consequenceText`)
+- A small `MoveResult` value object (`section`, `health`, `status`, `consequenceText`, `healthChange`)
   is returned by the
   domain move logic and reused as-is for the API response shape below.
 
@@ -212,7 +212,7 @@ flowchart LR
 |---|---|---|---|
 | `GET` | `/api/books` | query params: `search`, `difficulty`, `tags` (all optional) | Summarized list of **valid** books (id, title, author, difficulty, type, estimatedDuration, chapterCount, tags, description) — all 5 fields after `difficulty` are optional, author-provided display metadata, `null`/empty when the book's own JSON leaves them blank/absent (true for most sample books today); `tags` query param is accepted but not yet wired to actual filtering, see `docs/00-PARKING_LOT.md` #5 |
 | `GET` | `/api/books/{id}` | — | Full detail of a valid book (id, title, author, difficulty, type, estimatedDuration, chapterCount, tags, description, sections) — used to render the home → "book detail"/"begin quest" step |
-| `POST` | `/api/books/{id}/play` | `{ currentSectionId, optionIndex, health }` (omit `currentSectionId`/`optionIndex` to start a fresh game at `BEGIN`) | `{ section, health, status: PLAYING \| WON \| DEAD, consequenceText }` — the complete next view model (`consequenceText` is the just-applied option's `Consequence.text`, `null` if it had none — see `docs/00-PARKING_LOT.md` #3) |
+| `POST` | `/api/books/{id}/play` | `{ currentSectionId, optionIndex, health }` (omit `currentSectionId`/`optionIndex` to start a fresh game at `BEGIN`) | `{ section, health, status: PLAYING \| WON \| DEAD, consequenceText, healthChange }` — the complete next view model (`consequenceText` is the just-applied option's `Consequence.text`, `null` if it had none — see `docs/00-PARKING_LOT.md` #3; `healthChange` is the option's nominal signed HP effect, e.g. `-3`, unaffected by the HP clamp, `0` if none — see #20) |
 | `POST` | `/api/books` | Full book JSON | `201` if valid (added to `valid/`, now in the catalog) / `400` + every failed rule if invalid (added to `invalid/` + `.errors.txt`) |
 | `GET` | `/api/books/{id}/progress` | — | Saved progress `{ currentSectionId, health, updatedAt }`, `204` if none, `404 BOOK_NOT_FOUND` if the book no longer exists (any orphaned save for it is deleted on the way) |
 | `PUT` | `/api/books/{id}/progress` | `{ currentSectionId, health }` | Confirmation (upserts the single saved row for that book) |

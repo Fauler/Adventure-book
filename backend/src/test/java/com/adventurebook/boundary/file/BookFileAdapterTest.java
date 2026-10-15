@@ -228,4 +228,23 @@ class BookFileAdapterTest {
                 .satisfies(e -> assertThat(((BookValidationException) e).reasons())
                         .anyMatch(r -> r.contains("not valid JSON")));
     }
+
+    @Test
+    void registerBookExplainsWrongTypedFieldWithoutTechnicalDetails() {
+        String json = """
+                {"title":"T","author":"A","difficulty":"HARD","sections":[
+                  {"id":1,"text":"x","type":"BEGIN","options":[
+                    {"description":"d","gotoId":2,
+                     "consequence":{"type":"LOSE_HEALTH","value":"twenty","text":"ouch"}}]}]}
+                """;
+
+        assertThatThrownBy(() -> adapter.registerBook(json))
+                .isInstanceOf(BookValidationException.class)
+                .satisfies(e -> assertThat(((BookValidationException) e).reasons())
+                        .singleElement()
+                        .satisfies(r -> {
+                            assertThat(r).contains("sections[0].options[0].consequence.value");
+                            assertThat(r).doesNotContain("com.adventurebook").doesNotContain("StringNode");
+                        }));
+    }
 }

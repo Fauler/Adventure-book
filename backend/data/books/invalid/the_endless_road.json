@@ -1,0 +1,64 @@
+{
+  "title": "The Endless Road",
+  "author": "Test Author",
+  "difficulty": "MEDIUM",
+  "sections": [
+    {
+      "id": 1,
+      "text": "You start walking along an endless road.",
+      "type": "BEGIN",
+      "options": [
+        {
+          "description": "Continue",
+          "gotoId": 2
+        },
+        {
+          "description": "Turn back",
+          "gotoId": 3
+        },
+        {
+          "description": "Rest",
+          "gotoId": 2
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "text": "The road continues.",
+      "type": "NODE",
+      "options": [
+        {
+          "description": "Continue",
+          "gotoId": 1
+        },
+        {
+          "description": "Turn left",
+          "gotoId": 3
+        },
+        {
+          "description": "Turn right",
+          "gotoId": 1
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "text": "You find another road.",
+      "type": "NODE",
+      "options": [
+        {
+          "description": "Return",
+          "gotoId": 1
+        },
+        {
+          "description": "Continue",
+          "gotoId": 2
+        },
+        {
+          "description": "Wait",
+          "gotoId": 3
+        }
+      ]
+    }
+  ]
+}

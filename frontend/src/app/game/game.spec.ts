@@ -98,7 +98,7 @@ describe('Game', () => {
 
       const req = httpMock.expectOne((r) => r.url === playUrl);
       expect(req.request.body).toEqual({ currentSectionId: '1', optionIndex: 0, health: 10 });
-      req.flush({ section: { id: '2', text: 'The end.', options: [] }, health: 10, status: 'WON' });
+      req.flush({ section: { id: '2', text: 'The end.', options: [] }, health: 10, status: 'WON', consequenceText: null, healthChange: 0 });
       fixture.detectChanges();
 
       const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
@@ -111,6 +111,7 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -122,6 +123,7 @@ describe('Game', () => {
         health: 7,
         status: 'PLAYING',
         consequenceText: 'You cut yourself on a rusty nail.',
+        healthChange: -3,
       });
       fixture.detectChanges();
 
@@ -139,6 +141,7 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -150,6 +153,7 @@ describe('Game', () => {
         health: 15,
         status: 'PLAYING',
         consequenceText: 'The potion restores your strength.',
+        healthChange: 5,
       });
       fixture.detectChanges();
 
@@ -164,6 +168,7 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -175,6 +180,7 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -187,6 +193,7 @@ describe('Game', () => {
         health: 0,
         status: 'DEAD',
         consequenceText: 'The poison finishes you off.',
+        healthChange: -10,
       });
       fixture.detectChanges();
 
@@ -197,12 +204,38 @@ describe('Game', () => {
       expect((fixture.nativeElement as HTMLElement).querySelector('button.option')).toBeNull();
     });
 
+    it('shows the backend healthChange as-is on death, even when HP was lower than the loss', () => {
+      httpMock.expectOne((r) => r.url === playUrl).flush({
+        section: { id: '1', text: 'Cell', options: [{ description: 'Gather your thoughts' }] },
+        health: 1,
+        status: 'PLAYING',
+        consequenceText: null,
+        healthChange: 0,
+      });
+      fixture.detectChanges();
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.option')!.click();
+
+      httpMock.expectOne((r) => r.url === playUrl).flush({
+        section: { id: '1', text: 'Cell', options: [] },
+        health: 0,
+        status: 'DEAD',
+        consequenceText: "You're getting a little more crazier...",
+        healthChange: -3,
+      });
+      fixture.detectChanges();
+
+      expect((fixture.nativeElement as HTMLElement).querySelector('.health-delta')?.textContent?.trim()).toBe(
+        '(-3 HP)',
+      );
+    });
+
     it('leaves immediately on Stop once progress has been explicitly saved and nothing changed since', () => {
       httpMock.expectOne((r) => r.url === playUrl).flush({
         section: { id: '1', text: 'Section one', options: [{ description: 'Go north' }] },
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -230,6 +263,7 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -251,6 +285,7 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -260,6 +295,7 @@ describe('Game', () => {
         health: 7,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -288,6 +324,7 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -312,6 +349,7 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -340,6 +378,7 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -360,6 +399,7 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
@@ -380,13 +420,14 @@ describe('Game', () => {
         health: 10,
         status: 'PLAYING',
         consequenceText: null,
+        healthChange: 0,
       });
       fixture.detectChanges();
 
       (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.option')!.click();
       httpMock
         .expectOne((r) => r.url === playUrl)
-        .flush({ section: { id: '2', text: 'The end.', options: [] }, health: 10, status: 'WON', consequenceText: null });
+        .flush({ section: { id: '2', text: 'The end.', options: [] }, health: 10, status: 'WON', consequenceText: null, healthChange: 0 });
       fixture.detectChanges();
 
       expect((fixture.nativeElement as HTMLElement).querySelector('button.stop')).toBeNull();
