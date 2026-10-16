@@ -418,6 +418,9 @@ Open questions to resolve later:
 - Relates to entry #3 (how `consequence.text` is surfaced) and entry #6 (HP display
   consistency across outcome screens) — same general area of the gameplay screen.
 
+**Status update (15-10-2026)**: superseded by #20 — the amount now comes from the backend
+(`healthChange`), not from a frontend subtraction.
+
 **Status update (06-10-2026, resolved)**: implemented as a client-side derivation, no
 new backend field. In `Game.chooseOption()`, the frontend already holds "health before
 this move" (`current.health`, sent in the `/play` request) and receives "health after"
@@ -648,3 +651,38 @@ Open questions:
 
 Priority: highest of this group; it is the largest change and is a prerequisite for
 #18.
+
+
+## 20 - New requirement: backend returns the consequence HP amount ✅ Resolved (15-10-2026)
+Raised: 15-10-2026
+
+Context: new requirement added by the product owner; it did not exist before. Today
+the "(-N HP)" badge shown next to the consequence text (see #13) is derived in the
+frontend from `health` before/after the move. The requirement is that the backend
+returns the amount and the frontend only displays it, and that the amount always
+matches the option's consequence.
+
+Scenario (book "The Prisoner", section 500, option "Gather your thoughts" →
+`LOSE_HEALTH 3`, text "You're getting a little more crazier..."):
+- At 10 HP: `health: 7`; the player sees "(-3 HP)".
+- At 1 HP: the option is the same and still costs 3 HP, so the player must see
+  "(-3 HP)". Only `health` is clamped at 0 (→ `status: DEAD`). With the current
+  frontend derivation the badge shows "(-1 HP)", so the message changes for the same
+  option.
+
+Requirement:
+- `MoveResult`/`PlayResponse` get a `healthChange` field: the option's nominal signed
+  consequence value (`-3`, `+5`; `0` when the option has no consequence), independent of
+  the player's HP.
+- The frontend renders `healthChange` as-is and no longer subtracts HP values.
+- Implementation order: backend + tests first, then frontend, then docs.
+- Docs to update when done: API contract and `MoveResult` in
+  `docs/03-technical-architecture.md`, `docs/06-implementation-plan.md`, the resolution
+  note of #13, and the affected user story in `docs/02-user-stories.md`.
+
+**Status update (15-10-2026, resolved)**: implemented. `Consequence.signedValue()` gives
+the nominal value; `Book.resolveMove` returns it as `MoveResult.healthChange` (exposed in
+`PlayResponse`), `0` without a consequence. The frontend renders `response.healthChange`
+and no longer computes anything. Tests: `BookGameTest` (nominal value kept when HP is
+clamped, zero without consequence), `BookControllerPlayTest`, and `game.spec.ts` (a -3
+shown when the player dies from 1 HP).

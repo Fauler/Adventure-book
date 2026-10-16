@@ -18,6 +18,7 @@ import com.adventurebook.common.BookValidationException;
 import com.adventurebook.entity.Book;
 
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -107,7 +108,8 @@ public class BookFileAdapter {
         try {
             parsed = parseContent("pending", rawJson);
         } catch (RuntimeException e) {
-            throw new BookValidationException(List.of("book payload is empty or not valid JSON: " + e.getMessage()));
+            log.warn("Book payload could not be parsed: {}", e.getMessage());
+            throw new BookValidationException(List.of(describeParseFailure(e)));
         }
 
         List<String> errors = parsed.validate();
@@ -146,7 +148,8 @@ public class BookFileAdapter {
         try {
             book = parseContent(bookId, content);
         } catch (RuntimeException e) {
-            errors.add("book file is empty or not valid JSON: " + e.getMessage());
+            log.warn("Book file {} could not be parsed: {}", filename, e.getMessage());
+            errors.add(describeParseFailure(e));
         }
 
         if (book != null) {
@@ -172,6 +175,32 @@ public class BookFileAdapter {
             throw new UncheckedIOException(e);
         }
         return parseContent(bookId, content);
+    }
+
+    /**
+     * Turns a Jackson failure into a player/author-friendly reason: which field is wrong
+     * when Jackson knows it, otherwise a generic hint. The raw technical message (class
+     * names, reference chains) is only logged, never returned.
+     */
+    private static String describeParseFailure(RuntimeException e) {
+        if (e instanceof DatabindException de && !de.getPath().isEmpty()) {
+            StringBuilder path = new StringBuilder();
+            for (DatabindException.Reference ref : de.getPath()) {
+                if (ref.getPropertyName() != null) {
+                    if (!path.isEmpty()) {
+                        path.append('.');
+                    }
+                    path.append(ref.getPropertyName());
+                } else if (ref.getIndex() >= 0) {
+                    path.append('[').append(ref.getIndex()).append(']');
+                }
+            }
+            if (!path.isEmpty()) {
+                return "the field \"" + path + "\" has a value of the wrong type or format "
+                        + "(for example, text where a number is expected)";
+            }
+        }
+        return "the book is empty or is not valid JSON — check for a missing comma, quote or brace";
     }
 
     private Book parseContent(String bookId, String content) {

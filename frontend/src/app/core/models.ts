@@ -93,6 +93,8 @@ export interface PlayResponse {
   health: number;
   status: GameStatus;
   consequenceText: string | null;
+  /** Nominal signed HP effect of the chosen option (e.g. -3), from the backend; 0 if none. */
+  healthChange: number;
 }
 
 /**

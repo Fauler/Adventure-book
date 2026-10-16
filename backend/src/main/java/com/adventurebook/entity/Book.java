@@ -136,7 +136,7 @@ public record Book(String id, String title, String author, Difficulty difficulty
                 .findFirst()
                 .orElseThrow(() -> new DomainException(
                         "book \"" + id + "\" has no BEGIN section and cannot be played"));
-        return new MoveResult(begin, STARTING_HEALTH, GameStatus.PLAYING, null);
+        return new MoveResult(begin, STARTING_HEALTH, GameStatus.PLAYING, null, 0);
     }
 
     /**
@@ -184,6 +184,7 @@ public record Book(String id, String title, String author, Difficulty difficulty
             status = GameStatus.PLAYING;
         }
 
-        return new MoveResult(next, newHealth, status, consequenceText);
+        int healthChange = consequence != null ? consequence.signedValue() : 0;
+        return new MoveResult(next, newHealth, status, consequenceText, healthChange);
     }
 }

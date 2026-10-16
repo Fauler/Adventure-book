@@ -107,7 +107,7 @@ export class Game implements OnInit {
       return;
     }
     this.pendingResume.set(null);
-    this.state.set({ section, health: saved.health, status: 'PLAYING', consequenceText: null });
+    this.state.set({ section, health: saved.health, status: 'PLAYING', consequenceText: null, healthChange: 0 });
     this.lastSaved = { sectionId: saved.currentSectionId, health: saved.health };
     this.healthDelta.set(null);
   }
@@ -160,7 +160,6 @@ export class Game implements OnInit {
     }
     this.loading.set(true);
     this.error.set(false);
-    const healthBeforeMove = current.health;
     this.gameApi
       .play(this.bookId, {
         currentSectionId: current.section.id,
@@ -170,7 +169,7 @@ export class Game implements OnInit {
       .subscribe({
         next: (response) => {
           this.state.set(response);
-          this.healthDelta.set(response.consequenceText ? response.health - healthBeforeMove : null);
+          this.healthDelta.set(response.consequenceText ? response.healthChange : null);
           this.loading.set(false);
           if (response.status !== 'PLAYING') {
             // Auto-cleared server-side too; keeps the frontend's own tracking in sync.

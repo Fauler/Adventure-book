@@ -135,7 +135,8 @@ Backend:
   hard-coded ceiling — 10 is only the starting value).
 - `/play` now also takes/returns `health`, and returns `status` (`PLAYING`/`WON`/`DEAD`)
   plus `consequenceText` (the just-applied option's `Consequence.text`, `null` if none —
-  resolves `docs/00-PARKING_LOT.md` #3).
+  resolves `docs/00-PARKING_LOT.md` #3) and `healthChange` (the option's nominal signed HP
+  effect, e.g. `-3`, unclamped; `docs/00-PARKING_LOT.md` #20).
 - Tests: HP never below 0; `DEAD` triggered at/below 0 regardless of normal section type;
   `WON` only on reaching an `END` section; consequence ordering.
 

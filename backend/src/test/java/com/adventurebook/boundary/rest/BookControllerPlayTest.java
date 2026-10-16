@@ -58,16 +58,15 @@ class BookControllerPlayTest {
     @Test
     void startsFreshGame_whenNoCurrentSectionIdGiven() {
         when(gameEngineService.play(eq("test-book"), isNull(), isNull(), isNull()))
-                .thenReturn(new MoveResult(beginSection(), 10, GameStatus.PLAYING, null));
+                .thenReturn(new MoveResult(beginSection(), 10, GameStatus.PLAYING, null, 0));
 
-        tester().post().uri("/api/books/test-book/play")
+        var response = tester().post().uri("/api/books/test-book/play")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}")
-                .exchange()
-                .assertThat()
-                .hasStatusOk()
-                .bodyJson()
-                .extractingPath("$.health").isEqualTo(10);
+                .exchange();
+
+        response.assertThat().hasStatusOk().bodyJson().extractingPath("$.health").isEqualTo(10);
+        response.assertThat().bodyJson().extractingPath("$.healthChange").isEqualTo(0);
     }
 
     @Test

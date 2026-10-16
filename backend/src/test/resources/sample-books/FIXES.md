@@ -80,7 +80,7 @@ app startup) was run against them:
   - `pirates-jade-sea.json.errors.txt`: both the dangling-`gotoId` and the orphan-`NODE`
     errors, reported independently
   - `the-prisoner.json.errors.txt`: `section 666 is a NODE with no options`
-  - `dragon-quest.json.errors.txt`: `book file is empty or not valid JSON: ...`
+  - `dragon-quest.json.errors.txt`: `the book is empty or is not valid JSON — check for a missing comma, quote or brace` (or, when a field has the wrong type, `the field "<path>" has a value of the wrong type or format ...`)
 
 Both the original and fixed files are kept side by side in `incoming/` intentionally —
 it demonstrates the pipeline correctly discriminating between still-invalid and

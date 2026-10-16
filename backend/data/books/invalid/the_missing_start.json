@@ -1,0 +1,32 @@
+{
+  "title": "The Missing Start",
+  "author": "Test Author",
+  "difficulty": "EASY",
+  "sections": [
+    {
+      "id": 1,
+      "text": "You find yourself in the middle of a story with no clear beginning.",
+      "type": "NODE",
+      "options": [
+        {
+          "description": "Continue",
+          "gotoId": 2
+        },
+        {
+          "description": "Go back",
+          "gotoId": 3
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "text": "You reach a quiet clearing.",
+      "type": "END"
+    },
+    {
+      "id": 3,
+      "text": "You find your way home.",
+      "type": "END"
+    }
+  ]
+}
